@@ -1,6 +1,6 @@
 # Design system
 
-Generated: 2026-10-14T23:32:23.345528+00:00
+Generated: 2026-10-14T23:38:41.098965+00:00
 
 ## Tokens
 - No CSS custom properties found.
@@ -9,4 +9,8 @@ Generated: 2026-10-14T23:32:23.345528+00:00
 - No shadcn/ui components found.
 
 ## Project components
-- No project components found.
+- src/components/AiAssistant.tsx
+- src/components/InventoryTable.tsx
+- src/components/MetricsCards.tsx
+- src/components/ProductModal.tsx
+- src/components/StockMovementModal.tsx

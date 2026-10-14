@@ -1,5 +1,147 @@
 {
-  "generated_at": "2026-10-14T23:32:23.345528+00:00",
-  "files": [],
-  "dependencies": []
+  "generated_at": "2026-10-14T23:38:41.098965+00:00",
+  "files": [
+    {
+      "path": "index.html",
+      "bytes": 385
+    },
+    {
+      "path": "vite.config.ts",
+      "bytes": 244
+    },
+    {
+      "path": ".lovasiri/sync.json",
+      "bytes": 80
+    },
+    {
+      "path": "src/index.css",
+      "bytes": 281
+    },
+    {
+      "path": "src/App.tsx",
+      "bytes": 8339
+    },
+    {
+      "path": "src/main.tsx",
+      "bytes": 298
+    },
+    {
+      "path": "src/components/AiAssistant.tsx",
+      "bytes": 3156
+    },
+    {
+      "path": "src/components/ProductModal.tsx",
+      "bytes": 6033
+    },
+    {
+      "path": "src/components/StockMovementModal.tsx",
+      "bytes": 4806
+    },
+    {
+      "path": "src/components/MetricsCards.tsx",
+      "bytes": 2232
+    },
+    {
+      "path": "src/components/InventoryTable.tsx",
+      "bytes": 3681
+    },
+    {
+      "path": "src/types/inventory.ts",
+      "bytes": 378
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "vite.config.ts",
+      "target": "vite"
+    },
+    {
+      "source": "vite.config.ts",
+      "target": "@vitejs/plugin-react"
+    },
+    {
+      "source": "vite.config.ts",
+      "target": "path"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "./types/inventory"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "./components/MetricsCards"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "./components/InventoryTable"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "./components/ProductModal"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "./components/StockMovementModal"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "./components/AiAssistant"
+    },
+    {
+      "source": "src/main.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/main.tsx",
+      "target": "react-dom/client"
+    },
+    {
+      "source": "src/main.tsx",
+      "target": "@/App"
+    },
+    {
+      "source": "src/components/AiAssistant.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/AiAssistant.tsx",
+      "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/ProductModal.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/ProductModal.tsx",
+      "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/StockMovementModal.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/StockMovementModal.tsx",
+      "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/MetricsCards.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/MetricsCards.tsx",
+      "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/InventoryTable.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/InventoryTable.tsx",
+      "target": "../types/inventory"
+    }
+  ]
 }
