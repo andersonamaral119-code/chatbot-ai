@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-14T23:38:41.098965+00:00",
+  "generated_at": "2026-10-15T23:10:22.805117+00:00",
   "files": [
     {
       "path": "index.html",
@@ -19,7 +19,7 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 8339
+      "bytes": 9838
     },
     {
       "path": "src/main.tsx",
@@ -46,8 +46,16 @@
       "bytes": 3681
     },
     {
+      "path": "src/components/AuthModal.tsx",
+      "bytes": 5049
+    },
+    {
       "path": "src/types/inventory.ts",
       "bytes": 378
+    },
+    {
+      "path": "src/integrations/supabase/client.ts",
+      "bytes": 418
     }
   ],
   "dependencies": [
@@ -66,6 +74,10 @@
     {
       "source": "src/App.tsx",
       "target": "react"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "@supabase/supabase-js"
     },
     {
       "source": "src/App.tsx",
@@ -90,6 +102,14 @@
     {
       "source": "src/App.tsx",
       "target": "./components/AiAssistant"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "@/components/AuthModal"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "@/integrations/supabase/client"
     },
     {
       "source": "src/main.tsx",
@@ -142,6 +162,18 @@
     {
       "source": "src/components/InventoryTable.tsx",
       "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/AuthModal.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/AuthModal.tsx",
+      "target": "@/integrations/supabase/client"
+    },
+    {
+      "source": "src/integrations/supabase/client.ts",
+      "target": "@supabase/supabase-js"
     }
   ]
 }
