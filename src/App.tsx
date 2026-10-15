@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { User } from '@supabase/supabase-js';
 import { Product, StockMovement } from './types/inventory';
 import { MetricsCards } from './components/MetricsCards';
 import { InventoryTable } from './components/InventoryTable';
 import { ProductModal } from './components/ProductModal';
 import { StockMovementModal } from './components/StockMovementModal';
 import { AiAssistant } from './components/AiAssistant';
+import { AuthModal } from '@/components/AuthModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const INITIAL_PRODUCTS: Product[] = [
   {
@@ -53,11 +56,30 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
+
+  useEffect(() => {
+    // Carregar e persistir sessão ativa do Supabase
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('marisoft_inventory_products', JSON.stringify(products));
@@ -157,7 +179,22 @@ export default function App() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {user && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span className="max-w-[140px] truncate" title={user.email || ''}>
+                  {user.email}
+                </span>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="ml-2 text-slate-400 hover:text-rose-400 transition-colors"
+                  title="Encerrar sessão"
+                >
+                  Sair
+                </button>
+              </div>
+            )}
             <button
               onClick={() => setIsMovementModalOpen(true)}
               disabled={products.length === 0}
@@ -237,6 +274,8 @@ export default function App() {
           onSaveMovement={handleSaveMovement}
         />
       )}
+
+      {!authLoading && !user && <AuthModal isOpen={true} />}
     </main>
   );
 }
