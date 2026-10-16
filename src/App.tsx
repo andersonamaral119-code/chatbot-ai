@@ -147,7 +147,7 @@ export default function App() {
       // Carregar histórico persistido de stock_entries
       const { data: entriesData } = await supabase
         .from('stock_entries')
-        .select('id, product_id, boxes, pallets_count, loose_boxes, lot, notes, created_at, created_by')
+        .select('id, product_id, boxes, pallets_count, loose_boxes, lot, notes, created_at, created_by, status, reversed_at, reversed_by, reversal_reason')
         .order('created_at', { ascending: false });
 
       if (entriesData) {
@@ -172,6 +172,10 @@ export default function App() {
             lot: e.lot || '-',
             notes: e.notes || '',
             created_by: e.created_by,
+            status: e.status || 'active',
+            reversed_at: e.reversed_at ? new Date(e.reversed_at).toLocaleString('pt-BR') : undefined,
+            reversed_by: e.reversed_by,
+            reversal_reason: e.reversal_reason,
           };
         });
         setMovements(loadedMovements);
@@ -392,6 +396,34 @@ export default function App() {
     return true;
   };
 
+  const handleReverseEntry = async (entry: StockMovement) => {
+    if (entry.status === 'reversed') return;
+    const confirmed = window.confirm(`Confirmar estorno da entrada de ${entry.quantity} caixas (${entry.productCode} - ${entry.productName})?\n\nO saldo será revertido atomicamente.`);
+    if (!confirmed) return;
+
+    const reason = window.prompt('Motivo do estorno:', 'Estorno de entrada incorreta') || 'Estorno manual';
+
+    try {
+      const { error } = await supabase.rpc('reverse_stock_entry', {
+        _entry_id: entry.id,
+        _reason: reason,
+      });
+
+      if (error) {
+        setFeedback({ type: 'error', message: `Erro ao estornar entrada: ${error.message}` });
+        return;
+      }
+
+      await fetchSupabaseProducts();
+      setFeedback({
+        type: 'success',
+        message: `Entrada do produto ${entry.productCode} estornada com sucesso. Saldo recalculado!`,
+      });
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err?.message || 'Falha ao estornar lançamento.' });
+    }
+  };
+
   const categories = ['Todas', ...Array.from(new Set(products.map(p => p.category)))];
 
   const filteredProducts = products.filter(p => {
@@ -549,7 +581,9 @@ export default function App() {
                     <th className="px-4 py-3 text-right">Pallets</th>
                     <th className="px-4 py-3 text-right">Avulsas</th>
                     <th className="px-4 py-3">Lote</th>
+                    <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Observação</th>
+                    <th className="px-4 py-3 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
@@ -561,7 +595,8 @@ export default function App() {
                     </tr>
                   ) : (
                     movements.map(m => (
-                      <tr key={m.id} className="hover:bg-slate-800/40 transition-colors">
+                      <tr key={m.id} className={`hover:bg-slate-800/40 transition-colors ${m.status === 'reversed' ? 'opacity-60 bg-slate-950/40' : ''}`}>
+
                         <td className="px-4 py-3 font-mono text-xs text-slate-400">{m.date}</td>
                         <td className="px-4 py-3 font-mono text-xs text-cyan-400">{m.productCode || '-'}</td>
                         <td className="px-4 py-3 text-white font-medium">{m.productName}</td>
@@ -569,7 +604,32 @@ export default function App() {
                         <td className="px-4 py-3 text-right text-slate-300">{m.pallets ?? 0} plt</td>
                         <td className="px-4 py-3 text-right text-slate-300">{m.loose ?? 0} cx</td>
                         <td className="px-4 py-3 font-mono text-xs text-slate-300">{m.lot || '-'}</td>
-                        <td className="px-4 py-3 text-xs text-slate-400">{m.reason || m.notes || '-'}</td>
+                        <td className="px-4 py-3">
+                          {m.status === 'reversed' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-950 text-rose-300 border border-rose-800" title={`Estornado em ${m.reversed_at || ''}: ${m.reversal_reason || ''}`}>
+                              Estornada
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                              Ativa
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-400">
+                          {m.status === 'reversed' ? `[Estornado: ${m.reversal_reason || 'Manual'}]` : (m.reason || m.notes || '-')}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {m.status === 'reversed' ? (
+                            <span className="text-xs text-slate-500 font-mono">Estornado</span>
+                          ) : (
+                            <button
+                              onClick={() => handleReverseEntry(m)}
+                              className="px-2.5 py-1 text-xs font-medium rounded bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/60 transition-colors"
+                            >
+                              Estornar
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}

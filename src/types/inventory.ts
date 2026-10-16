@@ -30,4 +30,8 @@ export interface StockMovement {
   notes?: string;
   created_by?: string;
   created_by_email?: string;
+  status?: 'active' | 'reversed';
+  reversed_at?: string;
+  reversed_by?: string;
+  reversal_reason?: string;
 }
