@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-16T19:24:08.887355+00:00",
+  "generated_at": "2026-10-16T19:24:35.257597+00:00",
   "files": [
     {
       "path": "index.html",
@@ -19,7 +19,7 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 22929
+      "bytes": 23243
     },
     {
       "path": "src/main.tsx",
@@ -39,7 +39,7 @@
     },
     {
       "path": "src/components/MetricsCards.tsx",
-      "bytes": 2401
+      "bytes": 2472
     },
     {
       "path": "src/components/InventoryTable.tsx",
