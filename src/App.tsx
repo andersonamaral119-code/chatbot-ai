@@ -60,8 +60,8 @@ export default function App() {
           ...existing,
           code: req.code,
           sku: req.code,
-          name: existing.name || req.name,
-          boxes_per_pallet: 28,
+          name: key === 'PP8124' ? 'Limão / Gotas / Merengue 450g (Festtone)' : (existing.name || req.name),
+          boxes_per_pallet: key === 'PP8124' ? 28 : (existing.boxes_per_pallet ?? 28),
         });
       } else {
         map.set(key, {
