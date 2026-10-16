@@ -95,6 +95,8 @@ export default function App() {
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
+  const [activeTab, setActiveTab] = useState<'consulta' | 'historico'>('consulta');
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     // Carregar e persistir sessão ativa do Supabase
@@ -141,6 +143,37 @@ export default function App() {
         .select('id, boxes, loose, pallets');
 
       const balanceMap = new Map((balanceData ?? []).map((b: any) => [b.id, b]));
+
+      // Carregar histórico persistido de stock_entries
+      const { data: entriesData } = await supabase
+        .from('stock_entries')
+        .select('id, product_id, boxes, lot, notes, created_at, created_by')
+        .order('created_at', { ascending: false });
+
+      if (entriesData) {
+        const prodMap = new Map(prodData.map((p: any) => [p.id, p]));
+        const loadedMovements: StockMovement[] = entriesData.map((e: any) => {
+          const p = prodMap.get(e.product_id);
+          const bpp = p?.boxes_per_pallet || 28;
+          const total = Number(e.boxes) || 0;
+          return {
+            id: e.id,
+            productId: e.product_id,
+            productCode: p?.code || 'N/A',
+            productName: p?.name || 'Produto',
+            type: 'entrada',
+            quantity: total,
+            pallets: Math.floor(total / bpp),
+            loose: total % bpp,
+            date: new Date(e.created_at).toLocaleString('pt-BR'),
+            reason: e.notes || 'Entrada em estoque',
+            lot: e.lot || '-',
+            notes: e.notes || '',
+            created_by: e.created_by,
+          };
+        });
+        setMovements(loadedMovements);
+      }
 
       if (prodData.length > 0) {
         const mapped: Product[] = prodData.map((p: any) => {
@@ -253,40 +286,106 @@ export default function App() {
     setProducts(prev => prev.filter(p => p.id !== id));
   };
 
-  const handleSaveMovement = (movement: {
+  const handleSaveMovement = async (movement: {
     productId: string;
     type: 'entrada' | 'saida';
     quantity: number;
+    pallets: number;
+    loose: number;
     reason: string;
-  }) => {
+    lot?: string;
+    notes?: string;
+  }): Promise<boolean | void> => {
     const target = products.find(p => p.id === movement.productId);
-    if (!target) return;
+    if (!target) {
+      setFeedback({ type: 'error', message: 'Produto selecionado não encontrado.' });
+      return false;
+    }
 
-    const updatedStock =
-      movement.type === 'entrada'
-        ? target.currentStock + movement.quantity
-        : Math.max(0, target.currentStock - movement.quantity);
+    if (!user) {
+      setFeedback({ type: 'error', message: 'Sessão necessária para salvar no banco de dados.' });
+      return false;
+    }
 
-    setProducts(prev =>
-      prev.map(p =>
-        p.id === movement.productId
-          ? { ...p, currentStock: updatedStock, lastUpdated: new Date().toISOString() }
-          : p
-      )
-    );
+    // Validar se produto existe no Supabase (não é apenas temporário)
+    let targetDbId = target.id;
+    if (targetDbId.startsWith('prod-')) {
+      const { data: dbProd, error: dbErr } = await supabase
+        .from('products')
+        .select('id')
+        .eq('code', target.code || target.sku)
+        .maybeSingle();
+
+      if (dbErr || !dbProd) {
+        // Inserir produto no catálogo do banco se ainda não estiver sincronizado
+        const { data: inserted, error: insertProdErr } = await supabase
+          .from('products')
+          .insert([{
+            code: target.code || target.sku,
+            name: target.name,
+            boxes_per_pallet: target.boxes_per_pallet || 28,
+          }])
+          .select('id')
+          .single();
+
+        if (insertProdErr || !inserted) {
+          setFeedback({
+            type: 'error',
+            message: `Tabela de produtos inacessível no banco: ${insertProdErr?.message || 'registro ausente'}`,
+          });
+          return false;
+        }
+        targetDbId = inserted.id;
+      } else {
+        targetDbId = dbProd.id;
+      }
+    }
+
+    // Salvar persistentemente na tabela stock_entries configurada
+    const { data: entryResult, error: entryError } = await supabase
+      .from('stock_entries')
+      .insert([{
+        product_id: targetDbId,
+        boxes: movement.quantity,
+        lot: movement.lot || null,
+        notes: movement.notes || null,
+      }])
+      .select('id, created_at')
+      .single();
+
+    if (entryError) {
+      setFeedback({
+        type: 'error',
+        message: `Falha ao persistir entrada no Supabase: ${entryError.message}`,
+      });
+      return false;
+    }
+
+    // Recarregar saldos reais da view stock_balance e produtos
+    await fetchSupabaseProducts();
 
     const newMovement: StockMovement = {
-      id: `mov-${Date.now()}`,
-      productId: movement.productId,
+      id: entryResult?.id || `mov-${Date.now()}`,
+      productId: targetDbId,
+      productCode: target.code || target.sku,
       productName: target.name,
       type: movement.type,
       quantity: movement.quantity,
+      pallets: movement.pallets,
+      loose: movement.loose,
+      date: entryResult?.created_at ? new Date(entryResult.created_at).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'),
       reason: movement.reason,
-      date: new Date().toLocaleString('pt-BR'),
+      lot: movement.lot || '-',
+      notes: movement.notes || '',
     };
 
-    setMovements(prev => [newMovement, ...prev.slice(0, 49)]);
+    setMovements(prev => [newMovement, ...prev]);
     setIsMovementModalOpen(false);
+    setFeedback({
+      type: 'success',
+      message: `Entrada de ${movement.quantity} caixas (${movement.pallets} plt + ${movement.loose} avulsas) registrada com sucesso!`,
+    });
+    return true;
   };
 
   const categories = ['Todas', ...Array.from(new Set(products.map(p => p.category)))];
@@ -335,9 +434,9 @@ export default function App() {
             <button
               onClick={() => setIsMovementModalOpen(true)}
               disabled={products.length === 0}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white disabled:opacity-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition-colors shadow-lg shadow-emerald-950/40 font-semibold"
             >
-              Lançar Movimentação
+              + Registrar Entrada
             </button>
             <button
               onClick={() => {
@@ -351,11 +450,54 @@ export default function App() {
           </div>
         </header>
 
-        <MetricsCards products={products} />
+        {feedback && (
+          <div
+            className={`p-3 rounded-xl border flex items-center justify-between text-sm ${
+              feedback.type === 'success'
+                ? 'bg-emerald-950/70 border-emerald-800 text-emerald-200'
+                : 'bg-rose-950/70 border-rose-800 text-rose-200'
+            }`}
+          >
+            <span>{feedback.message}</span>
+            <button
+              onClick={() => setFeedback(null)}
+              className="text-xs underline hover:opacity-80 ml-4"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
+
+        <MetricsCards products={products} entriesCount={movements.filter(m => m.type === 'entrada').length} />
 
         <AiAssistant products={products} />
 
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+          <button
+            onClick={() => setActiveTab('consulta')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === 'consulta'
+                ? 'bg-cyan-600 text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            Consulta de Estoque
+          </button>
+          <button
+            onClick={() => setActiveTab('historico')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === 'historico'
+                ? 'bg-cyan-600 text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            Histórico de Movimentações ({movements.length})
+          </button>
+        </div>
+
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          {activeTab === 'consulta' ? (
+            <>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex flex-wrap items-center gap-2 flex-1">
               <input
@@ -390,6 +532,47 @@ export default function App() {
             }}
             onDelete={handleDeleteProduct}
           />
+            </>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-300">
+                <thead className="bg-slate-950/60 border-b border-slate-800 text-xs uppercase text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3">Data/Hora</th>
+                    <th className="px-4 py-3">Código</th>
+                    <th className="px-4 py-3">Produto</th>
+                    <th className="px-4 py-3 text-right">Total Caixas</th>
+                    <th className="px-4 py-3 text-right">Pallets</th>
+                    <th className="px-4 py-3 text-right">Avulsas</th>
+                    <th className="px-4 py-3">Lote</th>
+                    <th className="px-4 py-3">Observação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {movements.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                        Nenhuma movimentação registrada até o momento.
+                      </td>
+                    </tr>
+                  ) : (
+                    movements.map(m => (
+                      <tr key={m.id} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs text-slate-400">{m.date}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-cyan-400">{m.productCode || '-'}</td>
+                        <td className="px-4 py-3 text-white font-medium">{m.productName}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-emerald-400">+{m.quantity} cx</td>
+                        <td className="px-4 py-3 text-right text-slate-300">{m.pallets ?? 0} plt</td>
+                        <td className="px-4 py-3 text-right text-slate-300">{m.loose ?? 0} cx</td>
+                        <td className="px-4 py-3 font-mono text-xs text-slate-300">{m.lot || '-'}</td>
+                        <td className="px-4 py-3 text-xs text-slate-400">{m.reason || m.notes || '-'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </div>
 

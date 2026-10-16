@@ -8,10 +8,12 @@ interface StockMovementModalProps {
     productId: string;
     type: 'entrada' | 'saida';
     quantity: number;
+    pallets: number;
+    loose: number;
     reason: string;
     lot?: string;
     notes?: string;
-  }) => void;
+  }) => Promise<boolean | void>;
 }
 
 export const StockMovementModal: React.FC<StockMovementModalProps> = ({
@@ -25,28 +27,63 @@ export const StockMovementModal: React.FC<StockMovementModalProps> = ({
   const [looseBoxes, setLooseBoxes] = useState('0');
   const [lot, setLot] = useState('');
   const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const selectedProduct = products.find(p => p.id === productId);
   const bpp = selectedProduct?.boxes_per_pallet || 28;
   const totalCalculated = (Math.max(0, parseInt(pallets, 10) || 0) * bpp) + Math.max(0, parseInt(looseBoxes, 10) || 0);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productId || totalCalculated <= 0) return;
-    onSaveMovement({
-      productId,
-      type,
-      quantity: totalCalculated,
-      reason: reason.trim() || (type === 'entrada' ? 'Entrada em estoque' : 'Saída de estoque'),
-      lot: lot.trim() || undefined,
-      notes: `Paletes: ${pallets} | Avulsas: ${looseBoxes}`,
-    });
+    setFeedbackError(null);
+    if (isSubmitting) return;
+
+    if (!productId) {
+      setFeedbackError('Selecione um produto cadastrado.');
+      return;
+    }
+
+    const parsedPallets = Math.max(0, parseInt(pallets, 10) || 0);
+    const parsedLoose = Math.max(0, parseInt(looseBoxes, 10) || 0);
+
+    if (totalCalculated <= 0) {
+      setFeedbackError('Informe ao menos 1 pallet ou 1 caixa avulsa válida.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await onSaveMovement({
+        productId,
+        type,
+        quantity: totalCalculated,
+        pallets: parsedPallets,
+        loose: parsedLoose,
+        reason: reason.trim() || (type === 'entrada' ? 'Entrada em estoque' : 'Saída de estoque'),
+        lot: lot.trim() || undefined,
+        notes: reason.trim() || undefined,
+      });
+      if (res === false) {
+        setIsSubmitting(false);
+      }
+    } catch (err: any) {
+      setFeedbackError(err?.message || 'Falha ao registrar entrada.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-        <h2 className="text-xl font-bold text-white mb-4">Lançar Movimentação</h2>
+        <h2 className="text-xl font-bold text-white mb-4">
+          {type === 'entrada' ? 'Entrada de Estoque' : 'Saída de Estoque'}
+        </h2>
+        {feedbackError && (
+          <div className="mb-3 p-2.5 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-300 text-xs">
+            {feedbackError}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs text-slate-400 mb-1">Tipo de Movimentação</label>
@@ -148,9 +185,10 @@ export const StockMovementModal: React.FC<StockMovementModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm rounded-lg bg-sky-600 hover:bg-sky-500 font-medium text-white"
+              disabled={isSubmitting || totalCalculated <= 0}
+              className="px-4 py-2 text-sm rounded-lg bg-cyan-600 hover:bg-cyan-500 font-medium text-white disabled:opacity-50 transition-colors"
             >
-              Confirmar
+              {isSubmitting ? 'Registrando...' : type === 'entrada' ? 'Registrar Entrada' : 'Confirmar Saída'}
             </button>
           </div>
         </form>

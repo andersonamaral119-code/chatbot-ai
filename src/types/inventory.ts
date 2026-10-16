@@ -18,9 +18,12 @@ export interface Product {
 export interface StockMovement {
   id: string;
   productId: string;
+  productCode?: string;
   productName: string;
   type: 'entrada' | 'saida';
   quantity: number;
+  pallets?: number;
+  loose?: number;
   date: string;
   reason: string;
   lot?: string;
