@@ -17,6 +17,7 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({ products, entriesCou
     return acc + (p.loose_boxes ?? (p.currentStock % bpp));
   }, 0);
   const lowStockCount = products.filter(p => p.currentStock <= p.minStock).length;
+  const categoriesCount = new Set(products.map(p => p.category)).size;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

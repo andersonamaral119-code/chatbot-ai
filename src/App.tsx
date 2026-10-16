@@ -147,7 +147,7 @@ export default function App() {
       // Carregar histórico persistido de stock_entries
       const { data: entriesData } = await supabase
         .from('stock_entries')
-        .select('id, product_id, boxes, lot, notes, created_at, created_by')
+        .select('id, product_id, boxes, pallets_count, loose_boxes, lot, notes, created_at, created_by')
         .order('created_at', { ascending: false });
 
       if (entriesData) {
@@ -156,6 +156,8 @@ export default function App() {
           const p = prodMap.get(e.product_id);
           const bpp = p?.boxes_per_pallet || 28;
           const total = Number(e.boxes) || 0;
+          const calculatedPallets = e.pallets_count != null ? Number(e.pallets_count) : Math.floor(total / bpp);
+          const calculatedLoose = e.loose_boxes != null ? Number(e.loose_boxes) : (total % bpp);
           return {
             id: e.id,
             productId: e.product_id,
@@ -163,8 +165,8 @@ export default function App() {
             productName: p?.name || 'Produto',
             type: 'entrada',
             quantity: total,
-            pallets: Math.floor(total / bpp),
-            loose: total % bpp,
+            pallets: calculatedPallets,
+            loose: calculatedLoose,
             date: new Date(e.created_at).toLocaleString('pt-BR'),
             reason: e.notes || 'Entrada em estoque',
             lot: e.lot || '-',
@@ -347,6 +349,8 @@ export default function App() {
       .insert([{
         product_id: targetDbId,
         boxes: movement.quantity,
+        pallets_count: movement.pallets,
+        loose_boxes: movement.loose,
         lot: movement.lot || null,
         notes: movement.notes || null,
       }])
