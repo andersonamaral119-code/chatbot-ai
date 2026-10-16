@@ -34,4 +34,5 @@ export interface StockMovement {
   reversed_at?: string;
   reversed_by?: string;
   reversal_reason?: string;
+  reversal_entry_id?: string;
 }

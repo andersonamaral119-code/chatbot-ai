@@ -396,12 +396,15 @@ export default function App() {
     return true;
   };
 
+  const [reversingId, setReversingId] = useState<string | null>(null);
+
   const handleReverseEntry = async (entry: StockMovement) => {
-    if (entry.status === 'reversed') return;
-    const confirmed = window.confirm(`Confirmar estorno da entrada de ${entry.quantity} caixas (${entry.productCode} - ${entry.productName})?\n\nO saldo será revertido atomicamente.`);
+    if (entry.status === 'reversed' || reversingId === entry.id) return;
+    const confirmed = window.confirm(`Confirmar estorno da entrada de ${entry.quantity} caixas (${entry.productCode} - ${entry.productName})?\n\nO saldo será recalculado e a entrada será marcada como estornada de forma irreversível.`);
     if (!confirmed) return;
 
     const reason = window.prompt('Motivo do estorno:', 'Estorno de entrada incorreta') || 'Estorno manual';
+    setReversingId(entry.id);
 
     try {
       const { error } = await supabase.rpc('reverse_stock_entry', {
@@ -421,6 +424,8 @@ export default function App() {
       });
     } catch (err: any) {
       setFeedback({ type: 'error', message: err?.message || 'Falha ao estornar lançamento.' });
+    } finally {
+      setReversingId(null);
     }
   };
 
@@ -624,9 +629,10 @@ export default function App() {
                           ) : (
                             <button
                               onClick={() => handleReverseEntry(m)}
-                              className="px-2.5 py-1 text-xs font-medium rounded bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/60 transition-colors"
+                              disabled={reversingId === m.id}
+                              className="px-2.5 py-1 text-xs font-medium rounded bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/60 transition-colors disabled:opacity-50"
                             >
-                              Estornar
+                              {reversingId === m.id ? 'Estornando...' : 'Estornar'}
                             </button>
                           )}
                         </td>
