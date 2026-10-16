@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-15T23:10:22.805117+00:00",
+  "generated_at": "2026-10-16T00:41:44.051465+00:00",
   "files": [
     {
       "path": "index.html",
@@ -19,7 +19,7 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 9838
+      "bytes": 11198
     },
     {
       "path": "src/main.tsx",
@@ -31,11 +31,11 @@
     },
     {
       "path": "src/components/ProductModal.tsx",
-      "bytes": 6033
+      "bytes": 6791
     },
     {
       "path": "src/components/StockMovementModal.tsx",
-      "bytes": 4806
+      "bytes": 6212
     },
     {
       "path": "src/components/MetricsCards.tsx",
@@ -43,7 +43,7 @@
     },
     {
       "path": "src/components/InventoryTable.tsx",
-      "bytes": 3681
+      "bytes": 3533
     },
     {
       "path": "src/components/AuthModal.tsx",
@@ -51,7 +51,7 @@
     },
     {
       "path": "src/types/inventory.ts",
-      "bytes": 378
+      "bytes": 583
     },
     {
       "path": "src/integrations/supabase/client.ts",
