@@ -172,7 +172,7 @@ export default function App() {
             lot: e.lot || '-',
             notes: e.notes || '',
             created_by: e.created_by,
-            status: e.status || 'active',
+            status: (e.status === 'reversed' || Boolean(e.reversed_at)) ? 'reversed' : 'active',
             reversed_at: e.reversed_at ? new Date(e.reversed_at).toLocaleString('pt-BR') : undefined,
             reversed_by: e.reversed_by,
             reversal_reason: e.reversal_reason,
@@ -385,6 +385,7 @@ export default function App() {
       reason: movement.reason,
       lot: movement.lot || '-',
       notes: movement.notes || '',
+      status: 'active',
     };
 
     setMovements(prev => [newMovement, ...prev]);
@@ -400,10 +401,19 @@ export default function App() {
 
   const handleReverseEntry = async (entry: StockMovement) => {
     if (entry.status === 'reversed' || reversingId === entry.id) return;
-    const confirmed = window.confirm(`Confirmar estorno da entrada de ${entry.quantity} caixas (${entry.productCode} - ${entry.productName})?\n\nO saldo será recalculado e a entrada será marcada como estornada de forma irreversível.`);
+
+    const reasonInput = window.prompt(
+      `Informe o motivo do estorno para a entrada de ${entry.quantity} cx (${entry.productCode || 'PP'} - Lote: ${entry.lot || 'S/L'}):`,
+      'Estorno de entrada de teste'
+    );
+    if (reasonInput === null) return;
+
+    const reason = reasonInput.trim() || 'Estorno manual de entrada';
+    const confirmed = window.confirm(
+      `Atenção: confirmar o estorno de ${entry.quantity} caixas (${entry.productName})?\n\nMotivo: ${reason}\n\nEssa ação atualizará o saldo e manterá o lançamento como estornado.`
+    );
     if (!confirmed) return;
 
-    const reason = window.prompt('Motivo do estorno:', 'Estorno de entrada incorreta') || 'Estorno manual';
     setReversingId(entry.id);
 
     try {
@@ -594,50 +604,54 @@ export default function App() {
                 <tbody className="divide-y divide-slate-800">
                   {movements.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                      <td colSpan={10} className="px-4 py-8 text-center text-slate-500">
                         Nenhuma movimentação registrada até o momento.
                       </td>
                     </tr>
                   ) : (
-                    movements.map(m => (
-                      <tr key={m.id} className={`hover:bg-slate-800/40 transition-colors ${m.status === 'reversed' ? 'opacity-60 bg-slate-950/40' : ''}`}>
-
-                        <td className="px-4 py-3 font-mono text-xs text-slate-400">{m.date}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-cyan-400">{m.productCode || '-'}</td>
-                        <td className="px-4 py-3 text-white font-medium">{m.productName}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-emerald-400">+{m.quantity} cx</td>
-                        <td className="px-4 py-3 text-right text-slate-300">{m.pallets ?? 0} plt</td>
-                        <td className="px-4 py-3 text-right text-slate-300">{m.loose ?? 0} cx</td>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-300">{m.lot || '-'}</td>
-                        <td className="px-4 py-3">
-                          {m.status === 'reversed' ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-950 text-rose-300 border border-rose-800" title={`Estornado em ${m.reversed_at || ''}: ${m.reversal_reason || ''}`}>
-                              Estornada
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                              Ativa
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-slate-400">
-                          {m.status === 'reversed' ? `[Estornado: ${m.reversal_reason || 'Manual'}]` : (m.reason || m.notes || '-')}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {m.status === 'reversed' ? (
-                            <span className="text-xs text-slate-500 font-mono">Estornado</span>
-                          ) : (
-                            <button
-                              onClick={() => handleReverseEntry(m)}
-                              disabled={reversingId === m.id}
-                              className="px-2.5 py-1 text-xs font-medium rounded bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/60 transition-colors disabled:opacity-50"
-                            >
-                              {reversingId === m.id ? 'Estornando...' : 'Estornar'}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))
+                    movements.map(m => {
+                      const isReversed = m.status === 'reversed' || Boolean(m.reversed_at);
+                      return (
+                        <tr key={m.id} className={`hover:bg-slate-800/40 transition-colors ${isReversed ? 'opacity-60 bg-slate-950/40' : ''}`}>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-400">{m.date}</td>
+                          <td className="px-4 py-3 font-mono text-xs text-cyan-400 font-semibold">{m.productCode || '-'}</td>
+                          <td className="px-4 py-3 text-white font-medium">{m.productName}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-emerald-400">+{m.quantity} cx</td>
+                          <td className="px-4 py-3 text-right text-slate-300">{m.pallets ?? 0} plt</td>
+                          <td className="px-4 py-3 text-right text-slate-300">{m.loose ?? 0} cx</td>
+                          <td className="px-4 py-3 font-mono text-xs text-amber-300">{m.lot || '-'}</td>
+                          <td className="px-4 py-3">
+                            {isReversed ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-950 text-rose-300 border border-rose-800" title={`Estornado em ${m.reversed_at || ''}: ${m.reversal_reason || ''}`}>
+                                Estornada
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                Ativa
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-400 max-w-[200px] truncate" title={isReversed ? `Motivo estorno: ${m.reversal_reason || ''}` : (m.reason || m.notes || '')}>
+                            {isReversed ? `[Estornado: ${m.reversal_reason || 'Manual'}]` : (m.reason || m.notes || '-')}
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            {isReversed ? (
+                              <span className="text-xs text-slate-500 font-mono italic">Estornada</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleReverseEntry(m)}
+                                disabled={reversingId === m.id}
+                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md bg-rose-800 hover:bg-rose-700 text-white border border-rose-600 transition-colors shadow-sm disabled:opacity-50"
+                                title="Estornar esta entrada de estoque"
+                              >
+                                {reversingId === m.id ? 'Estornando...' : 'Estornar'}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
