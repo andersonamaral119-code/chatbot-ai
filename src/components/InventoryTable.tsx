@@ -25,13 +25,12 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
       <table className="w-full text-left text-sm text-slate-300">
         <thead className="bg-slate-950/60 border-b border-slate-800 text-xs uppercase text-slate-400">
           <tr>
-            <th className="px-4 py-3">SKU</th>
+            <th className="px-4 py-3">Código</th>
             <th className="px-4 py-3">Produto</th>
-            <th className="px-4 py-3">Categoria</th>
-            <th className="px-4 py-3 text-right">Qtd Estoque</th>
-            <th className="px-4 py-3 text-right">Estoque Mín.</th>
-            <th className="px-4 py-3 text-right">Custo Unit.</th>
-            <th className="px-4 py-3 text-right">Preço Venda</th>
+            <th className="px-4 py-3">Cx/Palete</th>
+            <th className="px-4 py-3 text-right">Estoque (Cx)</th>
+            <th className="px-4 py-3 text-right">Paletes Fechados</th>
+            <th className="px-4 py-3 text-right">Avulsas</th>
             <th className="px-4 py-3 text-center">Status</th>
             <th className="px-4 py-3 text-right">Ações</th>
           </tr>
@@ -39,19 +38,17 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
         <tbody className="divide-y divide-slate-800">
           {products.map(p => {
             const isLow = p.currentStock <= p.minStock;
+            const bpp = p.boxes_per_pallet || 28;
+            const pallets = p.full_pallets ?? Math.floor(p.currentStock / bpp);
+            const loose = p.loose_boxes ?? (p.currentStock % bpp);
             return (
               <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-sky-400">{p.sku}</td>
+                <td className="px-4 py-3 font-mono text-xs text-sky-400">{p.code || p.sku}</td>
                 <td className="px-4 py-3 font-medium text-white">{p.name}</td>
-                <td className="px-4 py-3 text-slate-400">{p.category}</td>
+                <td className="px-4 py-3 text-slate-400">{bpp} cx</td>
                 <td className="px-4 py-3 text-right font-semibold text-white">{p.currentStock}</td>
-                <td className="px-4 py-3 text-right text-slate-400">{p.minStock}</td>
-                <td className="px-4 py-3 text-right text-slate-300">
-                  {p.unitCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </td>
-                <td className="px-4 py-3 text-right text-slate-300">
-                  {p.unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </td>
+                <td className="px-4 py-3 text-right text-slate-300">{pallets} plt</td>
+                <td className="px-4 py-3 text-right text-slate-300">{loose} cx</td>
                 <td className="px-4 py-3 text-center">
                   {isLow ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-950 text-amber-400 border border-amber-800">

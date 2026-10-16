@@ -81,13 +81,54 @@ export default function App() {
     };
   }, []);
 
+  // Preserva dados no localStorage sem apagar ou sobrescrever vazio
   useEffect(() => {
-    localStorage.setItem('marisoft_inventory_products', JSON.stringify(products));
+    if (products.length > 0) {
+      localStorage.setItem('marisoft_inventory_products', JSON.stringify(products));
+    }
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem('marisoft_inventory_movements', JSON.stringify(movements));
+    if (movements.length > 0) {
+      localStorage.setItem('marisoft_inventory_movements', JSON.stringify(movements));
+    }
   }, [movements]);
+
+  // Etapa 1: Leitura de produtos e saldos do Supabase preservando localStorage
+  useEffect(() => {
+    if (!user) return;
+
+    async function loadSupabaseStock() {
+      const { data: prodData, error: prodErr } = await supabase
+        .from('products')
+        .select('id, sku, name, category, min_stock, unit_cost, unit_price, updated_at');
+
+      if (prodErr || !prodData) return;
+
+      const { data: balanceData } = await supabase
+        .from('stock_balance')
+        .select('product_id, current_stock');
+
+      const balanceMap = new Map((balanceData ?? []).map((b: { product_id: string; current_stock: number }) => [b.product_id, b.current_stock]));
+
+      if (prodData.length > 0) {
+        const mapped: Product[] = prodData.map((p: any) => ({
+          id: p.id,
+          sku: p.sku,
+          name: p.name,
+          category: p.category || 'Geral',
+          currentStock: balanceMap.get(p.id) ?? 0,
+          minStock: p.min_stock ?? 0,
+          unitCost: Number(p.unit_cost) || 0,
+          unitPrice: Number(p.unit_price) || 0,
+          lastUpdated: p.updated_at || new Date().toISOString(),
+        }));
+        setProducts(mapped);
+      }
+    }
+
+    loadSupabaseStock();
+  }, [user]);
 
   const handleSaveProduct = (productData: Omit<Product, 'id' | 'lastUpdated'> & { id?: string }) => {
     if (productData.id) {

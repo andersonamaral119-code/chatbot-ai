@@ -8,6 +8,11 @@ export interface Product {
   unitCost: number;
   unitPrice: number;
   lastUpdated: string;
+  code?: string;
+  boxes_per_pallet?: number;
+  total_boxes?: number;
+  full_pallets?: number;
+  loose_boxes?: number;
 }
 
 export interface StockMovement {
@@ -18,4 +23,8 @@ export interface StockMovement {
   quantity: number;
   date: string;
   reason: string;
+  lot?: string;
+  notes?: string;
+  created_by?: string;
+  created_by_email?: string;
 }

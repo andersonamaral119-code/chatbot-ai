@@ -9,6 +9,8 @@ interface StockMovementModalProps {
     type: 'entrada' | 'saida';
     quantity: number;
     reason: string;
+    lot?: string;
+    notes?: string;
   }) => void;
 }
 
@@ -19,20 +21,25 @@ export const StockMovementModal: React.FC<StockMovementModalProps> = ({
 }) => {
   const [productId, setProductId] = useState(products[0]?.id || '');
   const [type, setType] = useState<'entrada' | 'saida'>('entrada');
-  const [quantity, setQuantity] = useState('1');
+  const [pallets, setPallets] = useState('0');
+  const [looseBoxes, setLooseBoxes] = useState('0');
+  const [lot, setLot] = useState('');
   const [reason, setReason] = useState('');
 
   const selectedProduct = products.find(p => p.id === productId);
+  const bpp = selectedProduct?.boxes_per_pallet || 28;
+  const totalCalculated = (Math.max(0, parseInt(pallets, 10) || 0) * bpp) + Math.max(0, parseInt(looseBoxes, 10) || 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const qty = parseInt(quantity, 10);
-    if (!productId || isNaN(qty) || qty <= 0) return;
+    if (!productId || totalCalculated <= 0) return;
     onSaveMovement({
       productId,
       type,
-      quantity: qty,
-      reason: reason.trim() || (type === 'entrada' ? 'Reposição' : 'Venda/Consumo'),
+      quantity: totalCalculated,
+      reason: reason.trim() || (type === 'entrada' ? 'Entrada em estoque' : 'Saída de estoque'),
+      lot: lot.trim() || undefined,
+      notes: `Paletes: ${pallets} | Avulsas: ${looseBoxes}`,
     });
   };
 
@@ -84,15 +91,38 @@ export const StockMovementModal: React.FC<StockMovementModalProps> = ({
             </select>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Paletes ({bpp} cx/palete)</label>
+              <input
+                type="number"
+                min="0"
+                value={pallets}
+                onChange={e => setPallets(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Caixas Avulsas</label>
+              <input
+                type="number"
+                min="0"
+                value={looseBoxes}
+                onChange={e => setLooseBoxes(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+              />
+            </div>
+          </div>
+          <div className="text-xs text-cyan-400 font-mono">
+            Total de caixas a lançar: {totalCalculated} cx
+          </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Quantidade</label>
+            <label className="block text-xs text-slate-400 mb-1">Lote</label>
             <input
-              type="number"
-              min="1"
-              max={type === 'saida' && selectedProduct ? selectedProduct.currentStock : undefined}
-              value={quantity}
-              onChange={e => setQuantity(e.target.value)}
-              required
+              type="text"
+              value={lot}
+              onChange={e => setLot(e.target.value)}
+              placeholder="Ex: L2024-04B"
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
             />
           </div>
