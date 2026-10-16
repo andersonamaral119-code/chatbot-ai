@@ -94,14 +94,13 @@ export default function App() {
     }
   }, [movements]);
 
-  // Etapa 1: Leitura de produtos e saldos do Supabase preservando localStorage
-  useEffect(() => {
+  // Leitura de produtos com colunas reais de public.products e saldos
+  const fetchSupabaseProducts = async () => {
     if (!user) return;
-
-    async function loadSupabaseStock() {
+    try {
       const { data: prodData, error: prodErr } = await supabase
         .from('products')
-        .select('id, sku, name, category, min_stock, unit_cost, unit_price, updated_at');
+        .select('id, code, name, boxes_per_pallet, category, min_stock, unit_cost, unit_price, updated_at');
 
       if (prodErr || !prodData) return;
 
@@ -114,8 +113,10 @@ export default function App() {
       if (prodData.length > 0) {
         const mapped: Product[] = prodData.map((p: any) => ({
           id: p.id,
-          sku: p.sku,
+          sku: p.code || p.sku || '',
+          code: p.code || p.sku || '',
           name: p.name,
+          boxes_per_pallet: p.boxes_per_pallet ?? 28,
           category: p.category || 'Geral',
           currentStock: balanceMap.get(p.id) ?? 0,
           minStock: p.min_stock ?? 0,
@@ -125,12 +126,51 @@ export default function App() {
         }));
         setProducts(mapped);
       }
+    } catch (err) {
+      console.warn('Erro ao carregar do Supabase; mantendo dados locais:', err);
     }
+  };
 
-    loadSupabaseStock();
+  useEffect(() => {
+    fetchSupabaseProducts();
   }, [user]);
 
-  const handleSaveProduct = (productData: Omit<Product, 'id' | 'lastUpdated'> & { id?: string }) => {
+  const handleSaveProduct = async (productData: Omit<Product, 'id' | 'lastUpdated'> & { id?: string }) => {
+    const payload = {
+      code: productData.code || productData.sku,
+      name: productData.name,
+      boxes_per_pallet: productData.boxes_per_pallet ?? 28,
+    };
+
+    if (user) {
+      if (productData.id && !productData.id.startsWith('prod-')) {
+        const { error } = await supabase
+          .from('products')
+          .update(payload)
+          .eq('id', productData.id);
+
+        if (error) {
+          alert(`Falha ao salvar produto no Supabase: ${error.message}`);
+          return;
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('products')
+          .insert([payload])
+          .select('id')
+          .single();
+
+        if (error) {
+          alert(`Falha ao cadastrar produto no Supabase: ${error.message}`);
+          return;
+        }
+        if (data?.id) {
+          productData.id = data.id;
+        }
+      }
+    }
+
+    // ponytail: atualiza estado e localStorage local mantendo compatibilidade offline
     if (productData.id) {
       setProducts(prev =>
         prev.map(p =>
@@ -151,10 +191,27 @@ export default function App() {
     setEditingProduct(null);
   };
 
-  const handleDeleteProduct = (id: string) => {
-    if (confirm('Deseja realmente excluir este produto?')) {
-      setProducts(prev => prev.filter(p => p.id !== id));
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este produto?')) return;
+
+    if (user && !id.startsWith('prod-')) {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        // PostgreSQL 23503 = foreign key violation (ON DELETE RESTRICT)
+        if (error.code === '23503' || error.message.toLowerCase().includes('violates foreign key constraint') || error.message.toLowerCase().includes('restrict')) {
+          alert('Não é possível excluir: o produto possui movimentações de estoque registradas no histórico. A exclusão foi bloqueada para proteger a integridade dos dados.');
+          return;
+        }
+        alert(`Erro ao excluir produto no Supabase: ${error.message}`);
+        return;
+      }
     }
+
+    setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   const handleSaveMovement = (movement: {
