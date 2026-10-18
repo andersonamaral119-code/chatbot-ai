@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T21:10:05.766899+00:00",
+  "generated_at": "2026-10-18T21:25:45.492228+00:00",
   "files": [
     {
       "path": "index.html",
@@ -19,7 +19,7 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 28043
+      "bytes": 33360
     },
     {
       "path": "src/main.tsx",
@@ -51,7 +51,7 @@
     },
     {
       "path": "src/types/inventory.ts",
-      "bytes": 785
+      "bytes": 864
     },
     {
       "path": "src/integrations/supabase/client.ts",
