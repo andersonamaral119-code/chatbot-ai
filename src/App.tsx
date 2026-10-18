@@ -149,7 +149,7 @@ export default function App() {
       // Carregar histórico persistido de stock_entries
       const { data: entriesData } = await supabase
         .from('stock_entries')
-        .select('id, product_id, boxes, pallets_count, loose_boxes, lot, notes, created_at, created_by, status, reversed_at, reversed_by, reversal_reason, kind')
+        .select('id, product_id, boxes, pallets_count, loose_boxes, lot, notes, created_at, created_by, status, reversed_at, reversed_by, reversal_reason, kind, reversal_of')
         .order('created_at', { ascending: false });
 
       if (entriesData) {
@@ -159,7 +159,8 @@ export default function App() {
           const bpp = p?.boxes_per_pallet || 28;
           const total = Number(e.boxes) || 0;
           const absTotal = Math.abs(total);
-          const isSaida = e.kind === 'saida_carregamento' || total < 0;
+          const isSaida = e.kind === 'saida_carregamento' || (e.kind !== 'estorno' && total < 0);
+          const isEstorno = e.kind === 'estorno';
           const calculatedPallets = e.pallets_count != null ? Number(e.pallets_count) : Math.floor(absTotal / bpp);
           const calculatedLoose = e.loose_boxes != null ? Number(e.loose_boxes) : (absTotal % bpp);
           return {
@@ -167,8 +168,9 @@ export default function App() {
             productId: e.product_id,
             productCode: p?.code || 'N/A',
             productName: p?.name || 'Produto',
-            type: isSaida ? 'saida' : 'entrada',
+            type: isEstorno ? 'entrada' : isSaida ? 'saida' : 'entrada',
             kind: e.kind,
+            reversal_of: e.reversal_of,
             quantity: total,
             pallets: calculatedPallets,
             loose: calculatedLoose,
@@ -624,13 +626,16 @@ export default function App() {
                   ) : (
                     movements.map(m => {
                       const isReversed = m.status === 'reversed' || Boolean(m.reversed_at);
+                      const isSaida = m.kind === 'saida_carregamento' || m.type === 'saida';
+                      const isEstorno = m.kind === 'estorno';
+                      const canReverse = !isReversed && !isEstorno && (m.kind === 'entrada' || m.kind === 'saida_carregamento' || m.type === 'entrada' || m.type === 'saida');
                       return (
                         <tr key={m.id} className={`hover:bg-slate-800/40 transition-colors ${isReversed ? 'opacity-60 bg-slate-950/40' : ''}`}>
                           <td className="px-4 py-3 font-mono text-xs text-slate-400">{m.date}</td>
                           <td className="px-4 py-3 font-mono text-xs text-cyan-400 font-semibold">{m.productCode || '-'}</td>
                           <td className="px-4 py-3 text-white font-medium">{m.productName}</td>
-                          <td className={`px-4 py-3 text-right font-semibold ${m.type === 'saida' ? 'text-rose-400' : 'text-emerald-400'}`}>
-                            {m.type === 'saida' ? '-' : '+'}{m.quantity} cx
+                          <td className={`px-4 py-3 text-right font-semibold ${isEstorno ? 'text-cyan-400' : isSaida ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {isEstorno ? `+${Math.abs(m.quantity)} cx (estorno)` : `${isSaida ? '-' : '+'}${Math.abs(m.quantity)} cx`}
                           </td>
                           <td className="px-4 py-3 text-right text-slate-300">{m.pallets ?? 0} plt</td>
                           <td className="px-4 py-3 text-right text-slate-300">{m.loose ?? 0} cx</td>
@@ -639,6 +644,10 @@ export default function App() {
                             {isReversed ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-950 text-rose-300 border border-rose-800" title={`Estornado em ${m.reversed_at || ''}: ${m.reversal_reason || ''}`}>
                                 Estornada
+                              </span>
+                            ) : isEstorno ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                Estorno
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
@@ -652,20 +661,24 @@ export default function App() {
                           <td className="px-4 py-3 text-right whitespace-nowrap">
                             {isReversed ? (
                               <span className="text-xs text-slate-500 font-mono italic">Estornada</span>
-                            ) : (
+                            ) : isEstorno ? (
+                              <span className="text-xs text-slate-500 font-mono">—</span>
+                            ) : canReverse ? (
                               <button
                                 type="button"
                                 onClick={() => handleOpenReversalModal(m)}
                                 disabled={reversingId === m.id}
                                 className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md text-white transition-colors shadow-sm disabled:opacity-50 ${
-                                  m.type === 'saida'
-                                    ? 'bg-amber-700 hover:bg-amber-600 border border-amber-500'
+                                  isSaida
+                                    ? 'bg-amber-600 hover:bg-amber-500 border border-amber-400'
                                     : 'bg-rose-800 hover:bg-rose-700 border border-rose-600'
                                 }`}
-                                title={m.type === 'saida' ? 'Estorno autorizado de saída (devolve ao saldo)' : 'Estornar entrada de estoque'}
+                                title={isSaida ? 'Estornar saída para carregamento (devolve caixas ao estoque)' : 'Estornar entrada de estoque'}
                               >
-                                {reversingId === m.id ? 'Estornando...' : m.type === 'saida' ? 'Estornar Saída' : 'Estornar'}
+                                {reversingId === m.id ? 'Estornando...' : isSaida ? 'Estornar Saída' : 'Estornar'}
                               </button>
+                            ) : (
+                              <span className="text-xs text-slate-500 font-mono">—</span>
                             )}
                           </td>
                         </tr>
