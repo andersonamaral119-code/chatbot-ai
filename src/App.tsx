@@ -559,6 +559,9 @@ export default function App() {
           >
             Histórico de Movimentações ({movements.length})
           </button>
+          <span className="ml-auto text-xs text-slate-400 hidden sm:inline">
+            Estorno disponível para Entradas e Saídas
+          </span>
         </div>
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4">
@@ -628,7 +631,8 @@ export default function App() {
                       const isReversed = m.status === 'reversed' || Boolean(m.reversed_at);
                       const isSaida = m.kind === 'saida_carregamento' || m.type === 'saida';
                       const isEstorno = m.kind === 'estorno';
-                      const canReverse = !isReversed && !isEstorno && (m.kind === 'entrada' || m.kind === 'saida_carregamento' || m.type === 'entrada' || m.type === 'saida');
+                      // Exibe Estornar para entrada ou saida_carregamento ativa não estornada
+                      const canReverse = !isReversed && !isEstorno;
                       return (
                         <tr key={m.id} className={`hover:bg-slate-800/40 transition-colors ${isReversed ? 'opacity-60 bg-slate-950/40' : ''}`}>
                           <td className="px-4 py-3 font-mono text-xs text-slate-400">{m.date}</td>
