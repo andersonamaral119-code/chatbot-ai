@@ -11,7 +11,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
   const [sku, setSku] = useState(product?.code || product?.sku || '');
   const [name, setName] = useState(product?.name || '');
   const [category, setCategory] = useState(product?.category || 'Geral');
-  const [boxesPerPallet, setBoxesPerPallet] = useState(product?.boxes_per_pallet?.toString() || '28');
+  const [boxesPerPallet, setBoxesPerPallet] = useState(product?.boxes_per_pallet != null ? product.boxes_per_pallet.toString() : '');
   const [currentStock, setCurrentStock] = useState(product?.currentStock?.toString() || '0');
   const [minStock, setMinStock] = useState(product?.minStock?.toString() || '5');
   const [unitCost, setUnitCost] = useState(product?.unitCost?.toString() || '0');
@@ -20,14 +20,14 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = sku.trim().toUpperCase() || `SKU-${Date.now().toString().slice(-4)}`;
-    const bpp = Math.max(1, parseInt(boxesPerPallet, 10) || 28);
+    const parsedBpp = boxesPerPallet.trim() !== '' ? Math.max(1, parseInt(boxesPerPallet, 10) || 0) : null;
     onSave({
       ...(product?.id ? { id: product.id } : {}),
       sku: cleanCode,
       code: cleanCode,
       name: name.trim(),
       category: category.trim(),
-      boxes_per_pallet: bpp,
+      boxes_per_pallet: parsedBpp,
       currentStock: Math.max(0, parseInt(currentStock, 10) || 0),
       minStock: Math.max(0, parseInt(minStock, 10) || 0),
       unitCost: Math.max(0, parseFloat(unitCost) || 0),
@@ -77,13 +77,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
             />
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Caixas por Palete (padrão 28)</label>
+            <label className="block text-xs text-slate-400 mb-1">Caixas por Palete (deixe em branco se pendente)</label>
             <input
               type="number"
               min="1"
               value={boxesPerPallet}
               onChange={e => setBoxesPerPallet(e.target.value)}
-              required
+              placeholder="Pendente de validação"
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
             />
           </div>

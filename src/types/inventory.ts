@@ -9,7 +9,8 @@ export interface Product {
   unitPrice: number;
   lastUpdated: string;
   code?: string;
-  boxes_per_pallet?: number;
+  boxes_per_pallet?: number | null;
+  is_active?: boolean;
   total_boxes?: number;
   full_pallets?: number;
   loose_boxes?: number;

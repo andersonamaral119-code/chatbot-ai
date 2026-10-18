@@ -21,18 +21,23 @@ export const StockMovementModal: React.FC<StockMovementModalProps> = ({
   onClose,
   onSaveMovement,
 }) => {
-  const [productId, setProductId] = useState(products[0]?.id || '');
+  const activeProducts = products.filter(p => p.is_active !== false);
+  const [productId, setProductId] = useState(activeProducts[0]?.id || products[0]?.id || '');
   const [type, setType] = useState<'entrada' | 'saida'>('entrada');
   const [pallets, setPallets] = useState('0');
   const [looseBoxes, setLooseBoxes] = useState('0');
+  const [directBoxes, setDirectBoxes] = useState('0');
   const [lot, setLot] = useState('');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const selectedProduct = products.find(p => p.id === productId);
-  const bpp = selectedProduct?.boxes_per_pallet || 28;
-  const totalCalculated = (Math.max(0, parseInt(pallets, 10) || 0) * bpp) + Math.max(0, parseInt(looseBoxes, 10) || 0);
+  const bpp = selectedProduct?.boxes_per_pallet;
+  const isBppPending = bpp == null || bpp <= 0;
+  const totalCalculated = isBppPending
+    ? Math.max(0, parseInt(directBoxes, 10) || 0)
+    : (Math.max(0, parseInt(pallets, 10) || 0) * (bpp || 0)) + Math.max(0, parseInt(looseBoxes, 10) || 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,36 +125,59 @@ export const StockMovementModal: React.FC<StockMovementModalProps> = ({
               onChange={e => setProductId(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
             >
-              {products.map(p => (
+              {products.filter(p => p.is_active !== false).map(p => (
                 <option key={p.id} value={p.id}>
-                  {p.sku} — {p.name} (Atual: {p.currentStock})
+                  {p.sku} — {p.name} {p.boxes_per_pallet ? `(${p.boxes_per_pallet} cx/pl)` : '(Cx/Pallet Pendente)'}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Paletes ({bpp} cx/palete)</label>
-              <input
-                type="number"
-                min="0"
-                value={pallets}
-                onChange={e => setPallets(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
-              />
+          {isBppPending ? (
+            <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-800 text-xs text-amber-200 space-y-2">
+              <p className="font-semibold flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                Caixas por Pallet pendente de validação
+              </p>
+              <p className="text-amber-300/80">
+                Cálculo automático de pallets travado até confirmação cadastral. Informe as caixas diretamente:
+              </p>
+              <div>
+                <label className="block text-xs text-amber-200 mb-1 font-medium">Total de Caixas Diretas</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={directBoxes}
+                  onChange={e => setDirectBoxes(e.target.value)}
+                  placeholder="Informe o número de caixas"
+                  className="w-full bg-slate-950 border border-amber-700/60 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Caixas Avulsas</label>
-              <input
-                type="number"
-                min="0"
-                value={looseBoxes}
-                onChange={e => setLooseBoxes(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
-              />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Paletes ({bpp} cx/palete)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={pallets}
+                  onChange={e => setPallets(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Caixas Avulsas</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={looseBoxes}
+                  onChange={e => setLooseBoxes(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
             </div>
-          </div>
+          )}
           <div className="text-xs text-cyan-400 font-mono">
             Total de caixas a lançar: {totalCalculated} cx
           </div>

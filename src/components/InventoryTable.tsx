@@ -38,19 +38,30 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
         <tbody className="divide-y divide-slate-800">
           {products.map(p => {
             const isLow = p.currentStock <= p.minStock;
-            const bpp = p.boxes_per_pallet || 28;
-            const pallets = p.full_pallets ?? Math.floor(p.currentStock / bpp);
-            const loose = p.loose_boxes ?? (p.currentStock % bpp);
+            const bpp = p.boxes_per_pallet;
+            const hasBpp = bpp != null && bpp > 0;
+            const pallets = hasBpp ? (p.full_pallets ?? Math.floor(p.currentStock / bpp)) : null;
+            const loose = hasBpp ? (p.loose_boxes ?? (p.currentStock % bpp)) : null;
+            const isInactive = p.is_active === false;
             return (
-              <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+              <tr key={p.id} className={`hover:bg-slate-800/40 transition-colors ${isInactive ? 'opacity-60 bg-slate-950/50' : ''}`}>
                 <td className="px-4 py-3 font-mono text-xs text-sky-400">{p.code || p.sku}</td>
-                <td className="px-4 py-3 font-medium text-white">{p.name}</td>
-                <td className="px-4 py-3 text-slate-400">{bpp} cx</td>
+                <td className="px-4 py-3 font-medium text-white">
+                  {p.name}
+                  {isInactive && <span className="ml-2 text-[10px] uppercase font-bold px-1.5 py-0.5 bg-rose-950 text-rose-300 border border-rose-800 rounded">Inativo</span>}
+                </td>
+                <td className="px-4 py-3 text-slate-400">
+                  {hasBpp ? `${bpp} cx` : <span className="text-amber-400 text-xs italic font-medium">Pendente</span>}
+                </td>
                 <td className="px-4 py-3 text-right font-semibold text-white">{p.currentStock}</td>
-                <td className="px-4 py-3 text-right text-slate-300">{pallets} plt</td>
-                <td className="px-4 py-3 text-right text-slate-300">{loose} cx</td>
+                <td className="px-4 py-3 text-right text-slate-300">{pallets != null ? `${pallets} plt` : '—'}</td>
+                <td className="px-4 py-3 text-right text-slate-300">{loose != null ? `${loose} cx` : '—'}</td>
                 <td className="px-4 py-3 text-center">
-                  {isLow ? (
+                  {isInactive ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                      Desativado
+                    </span>
+                  ) : isLow ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-950 text-amber-400 border border-amber-800">
                       Baixo Estoque
                     </span>

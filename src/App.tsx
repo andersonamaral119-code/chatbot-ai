@@ -10,21 +10,25 @@ import { AuthModal } from '@/components/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 
 const REQUIRED_CATALOG = [
-  { code: 'PP0103', name: 'Festtone Frutas', category: 'Festtone' },
-  { code: 'PP0104', name: 'Festtone Chocolate (Festtone)', category: 'Festtone' },
-  { code: 'PP0105', name: 'Trufado Chocolate 400g (Festtone)', category: 'Festtone' },
-  { code: 'PP0130', name: 'Frutas 750g (Marilan)', category: 'Marilan' },
-  { code: 'PP0131', name: 'Chocotone 750g (Marilan)', category: 'Marilan' },
-  { code: 'PP0401', name: 'Muffato Panettone Frutas Sachê (Marilan — Produzido para a rede Muffato)', category: 'Marilan' },
-  { code: 'PP5201', name: 'Gotas 400g (Marilan)', category: 'Marilan' },
-  { code: 'PP5704', name: 'Gotas 400g (Marilan)', category: 'Marilan' },
-  { code: 'PP5984', name: 'Identificação manual (Marilan — Etiqueta colada em caixa padrão Marilan)', category: 'Marilan' },
-  { code: 'PP7304', name: 'Pan Rede Allos Choco 400g (Marilan — Produzido para rede parceira)', category: 'Marilan' },
-  { code: 'PP8114', name: 'Trufado Brigadeiro 400g (Festtone)', category: 'Festtone' },
-  { code: 'PP8117', name: 'Premium Brigadeiro 550g (Festtone)', category: 'Festtone' },
-  { code: 'PP8121', name: 'Chocotone / Trufado 450g (Festtone)', category: 'Festtone' },
-  { code: 'PP8122', name: 'Chocotone / Meio Amargo 450g (Festtone)', category: 'Festtone' },
-  { code: 'PP8124', name: 'Limão / Gotas / Merengue 450g (Festtone)', category: 'Festtone' },
+  { code: 'PP0103', name: 'Festtone Frutas', category: 'Festtone', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP0104', name: 'Festtone Chocolate (Festtone)', category: 'Festtone', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP0105', name: 'Trufado Chocolate 400g (Festtone)', category: 'Festtone', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP0130', name: 'Frutas 750g (Marilan)', category: 'Marilan', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP0131', name: 'Chocotone 750g (Marilan)', category: 'Marilan', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP0401', name: 'Muffato Panettone Frutas Sachê (Marilan — Produzido para a rede Muffato)', category: 'Marilan', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP5201', name: 'Gotas 400g (Marilan)', category: 'Marilan', boxes_per_pallet: 28, is_active: false },
+  { code: 'PP5703', name: 'Gotas 400g (Marilan)', category: 'Marilan', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP5704', name: 'Gotas 400g (Marilan)', category: 'Marilan', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP5928', name: 'Casa Suíça Frutas', category: 'Casa Suíça', boxes_per_pallet: null, is_active: true },
+  { code: 'PP5932', name: 'Casa Suíça Gotas', category: 'Casa Suíça', boxes_per_pallet: null, is_active: true },
+  { code: 'PP5984', name: 'Identificação manual (Marilan — Etiqueta colada em caixa padrão Marilan)', category: 'Marilan', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP5986', name: 'Casa Suíça Trufado', category: 'Casa Suíça', boxes_per_pallet: null, is_active: true },
+  { code: 'PP7304', name: 'Pan Rede Allos Choco 400g (Marilan — Produzido para rede parceira)', category: 'Marilan', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP8114', name: 'Trufado Brigadeiro 400g (Festtone)', category: 'Festtone', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP8117', name: 'Premium Brigadeiro 550g (Festtone)', category: 'Festtone', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP8121', name: 'Chocotone / Trufado 450g (Festtone)', category: 'Festtone', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP8122', name: 'Chocotone / Meio Amargo 450g (Festtone)', category: 'Festtone', boxes_per_pallet: 28, is_active: true },
+  { code: 'PP8124', name: 'Limão / Gotas / Merengue 450g (Festtone)', category: 'Festtone', boxes_per_pallet: null, is_active: true },
 ];
 
 const INITIAL_PRODUCTS: Product[] = REQUIRED_CATALOG.map((item, index) => ({
@@ -33,7 +37,8 @@ const INITIAL_PRODUCTS: Product[] = REQUIRED_CATALOG.map((item, index) => ({
   code: item.code,
   name: item.name,
   category: item.category,
-  boxes_per_pallet: 28,
+  boxes_per_pallet: item.boxes_per_pallet,
+  is_active: item.is_active,
   currentStock: 0,
   minStock: 28,
   unitCost: 0,
@@ -60,8 +65,10 @@ export default function App() {
           ...existing,
           code: req.code,
           sku: req.code,
-          name: key === 'PP0103' ? 'Festtone Frutas' : key === 'PP8124' ? 'Limão / Gotas / Merengue 450g (Festtone)' : (existing.name || req.name),
-          boxes_per_pallet: key === 'PP0103' || key === 'PP8124' ? 28 : (existing.boxes_per_pallet ?? 28),
+          name: req.name,
+          category: req.category,
+          is_active: req.is_active,
+          boxes_per_pallet: req.boxes_per_pallet,
         });
       } else {
         map.set(key, {
@@ -70,7 +77,8 @@ export default function App() {
           code: req.code,
           name: req.name,
           category: req.category,
-          boxes_per_pallet: 28,
+          is_active: req.is_active,
+          boxes_per_pallet: req.boxes_per_pallet,
           currentStock: 0,
           minStock: 28,
           unitCost: 0,
@@ -136,7 +144,7 @@ export default function App() {
     try {
       const { data: prodData, error: prodErr } = await supabase
         .from('products')
-        .select('id, code, name, boxes_per_pallet, created_at');
+        .select('id, code, name, boxes_per_pallet, is_active, created_at');
 
       if (prodErr || !prodData) return;
 
@@ -191,18 +199,20 @@ export default function App() {
       if (prodData.length > 0) {
         const mapped: Product[] = prodData.map((p: any) => {
           const b = balanceMap.get(p.id);
-          const bpp = p.boxes_per_pallet ?? 28;
+          const bpp = p.boxes_per_pallet != null ? Number(p.boxes_per_pallet) : null;
           const boxes = b?.boxes != null ? Number(b.boxes) : 0;
+          const hasBpp = bpp != null && bpp > 0;
           return {
             id: p.id,
             sku: p.code,
             code: p.code,
             name: p.name,
             boxes_per_pallet: bpp,
-            category: p.name?.includes('Festtone') ? 'Festtone' : 'Marilan',
+            is_active: p.is_active ?? true,
+            category: p.name?.includes('Festtone') ? 'Festtone' : p.name?.includes('Casa Suíça') ? 'Casa Suíça' : 'Marilan',
             currentStock: boxes,
-            full_pallets: b?.pallets != null ? Number(b.pallets) : Math.floor(boxes / bpp),
-            loose_boxes: b?.loose != null ? Number(b.loose) : (boxes % bpp),
+            full_pallets: hasBpp ? (b?.pallets != null ? Number(b.pallets) : Math.floor(boxes / bpp)) : undefined,
+            loose_boxes: hasBpp ? (b?.loose != null ? Number(b.loose) : (boxes % bpp)) : undefined,
             minStock: 28,
             unitCost: 0,
             unitPrice: 0,
@@ -224,7 +234,8 @@ export default function App() {
     const payload = {
       code: productData.code || productData.sku,
       name: productData.name,
-      boxes_per_pallet: productData.boxes_per_pallet ?? 28,
+      boxes_per_pallet: productData.boxes_per_pallet ?? null,
+      is_active: productData.is_active ?? true,
     };
 
     if (user) {
