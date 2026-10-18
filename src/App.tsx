@@ -147,7 +147,7 @@ export default function App() {
       // Carregar histórico persistido de stock_entries
       const { data: entriesData } = await supabase
         .from('stock_entries')
-        .select('id, product_id, boxes, pallets_count, loose_boxes, lot, notes, created_at, created_by, status, reversed_at, reversed_by, reversal_reason')
+        .select('id, product_id, boxes, pallets_count, loose_boxes, lot, notes, created_at, created_by, status, reversed_at, reversed_by, reversal_reason, kind')
         .order('created_at', { ascending: false });
 
       if (entriesData) {
@@ -156,14 +156,16 @@ export default function App() {
           const p = prodMap.get(e.product_id);
           const bpp = p?.boxes_per_pallet || 28;
           const total = Number(e.boxes) || 0;
-          const calculatedPallets = e.pallets_count != null ? Number(e.pallets_count) : Math.floor(total / bpp);
-          const calculatedLoose = e.loose_boxes != null ? Number(e.loose_boxes) : (total % bpp);
+          const absTotal = Math.abs(total);
+          const isSaida = e.kind === 'saida_carregamento' || total < 0;
+          const calculatedPallets = e.pallets_count != null ? Number(e.pallets_count) : Math.floor(absTotal / bpp);
+          const calculatedLoose = e.loose_boxes != null ? Number(e.loose_boxes) : (absTotal % bpp);
           return {
             id: e.id,
             productId: e.product_id,
             productCode: p?.code || 'N/A',
             productName: p?.name || 'Produto',
-            type: 'entrada',
+            type: isSaida ? 'saida' : 'entrada',
             quantity: total,
             pallets: calculatedPallets,
             loose: calculatedLoose,
@@ -347,12 +349,17 @@ export default function App() {
       }
     }
 
+    const isSaida = movement.type === 'saida';
+    const boxesSigned = isSaida ? -Math.abs(movement.quantity) : Math.abs(movement.quantity);
+    const kindValue = isSaida ? 'saida_carregamento' : 'entrada';
+
     // Salvar persistentemente na tabela stock_entries configurada
     const { data: entryResult, error: entryError } = await supabase
       .from('stock_entries')
       .insert([{
         product_id: targetDbId,
-        boxes: movement.quantity,
+        boxes: boxesSigned,
+        kind: kindValue,
         pallets_count: movement.pallets,
         loose_boxes: movement.loose,
         lot: movement.lot || null,
@@ -364,7 +371,7 @@ export default function App() {
     if (entryError) {
       setFeedback({
         type: 'error',
-        message: `Falha ao persistir entrada no Supabase: ${entryError.message}`,
+        message: `Falha ao persistir ${isSaida ? 'saída' : 'entrada'} no Supabase: ${entryError.message}`,
       });
       return false;
     }
@@ -378,7 +385,7 @@ export default function App() {
       productCode: target.code || target.sku,
       productName: target.name,
       type: movement.type,
-      quantity: movement.quantity,
+      quantity: Math.abs(movement.quantity),
       pallets: movement.pallets,
       loose: movement.loose,
       date: entryResult?.created_at ? new Date(entryResult.created_at).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'),
@@ -392,7 +399,7 @@ export default function App() {
     setIsMovementModalOpen(false);
     setFeedback({
       type: 'success',
-      message: `Entrada de ${movement.quantity} caixas (${movement.pallets} plt + ${movement.loose} avulsas) registrada com sucesso!`,
+      message: `${isSaida ? 'Saída' : 'Entrada'} de ${Math.abs(movement.quantity)} caixas (${movement.pallets} plt + ${movement.loose} avulsas) registrada com sucesso!`,
     });
     return true;
   };
@@ -616,7 +623,9 @@ export default function App() {
                           <td className="px-4 py-3 font-mono text-xs text-slate-400">{m.date}</td>
                           <td className="px-4 py-3 font-mono text-xs text-cyan-400 font-semibold">{m.productCode || '-'}</td>
                           <td className="px-4 py-3 text-white font-medium">{m.productName}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-emerald-400">+{m.quantity} cx</td>
+                          <td className={`px-4 py-3 text-right font-semibold ${m.type === 'saida' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {m.type === 'saida' ? '-' : '+'}{m.quantity} cx
+                          </td>
                           <td className="px-4 py-3 text-right text-slate-300">{m.pallets ?? 0} plt</td>
                           <td className="px-4 py-3 text-right text-slate-300">{m.loose ?? 0} cx</td>
                           <td className="px-4 py-3 font-mono text-xs text-amber-300">{m.lot || '-'}</td>
