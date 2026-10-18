@@ -10,7 +10,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 
 const REQUIRED_CATALOG = [
-  { code: 'PP0103', name: 'Frutas 400g (Marilan)', category: 'Marilan' },
+  { code: 'PP0103', name: 'Festtone Frutas', category: 'Festtone' },
   { code: 'PP0104', name: 'Festtone Chocolate (Festtone)', category: 'Festtone' },
   { code: 'PP0105', name: 'Trufado Chocolate 400g (Festtone)', category: 'Festtone' },
   { code: 'PP0130', name: 'Frutas 750g (Marilan)', category: 'Marilan' },
@@ -60,8 +60,8 @@ export default function App() {
           ...existing,
           code: req.code,
           sku: req.code,
-          name: key === 'PP8124' ? 'Limão / Gotas / Merengue 450g (Festtone)' : (existing.name || req.name),
-          boxes_per_pallet: key === 'PP8124' ? 28 : (existing.boxes_per_pallet ?? 28),
+          name: key === 'PP0103' ? 'Festtone Frutas' : key === 'PP8124' ? 'Limão / Gotas / Merengue 450g (Festtone)' : (existing.name || req.name),
+          boxes_per_pallet: key === 'PP0103' || key === 'PP8124' ? 28 : (existing.boxes_per_pallet ?? 28),
         });
       } else {
         map.set(key, {
