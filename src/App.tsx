@@ -668,14 +668,10 @@ export default function App() {
                                 type="button"
                                 onClick={() => handleOpenReversalModal(m)}
                                 disabled={reversingId === m.id}
-                                className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md text-white transition-colors shadow-sm disabled:opacity-50 ${
-                                  isSaida
-                                    ? 'bg-amber-600 hover:bg-amber-500 border border-amber-400'
-                                    : 'bg-rose-800 hover:bg-rose-700 border border-rose-600'
-                                }`}
+                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md text-white transition-colors shadow-sm disabled:opacity-50 bg-rose-800 hover:bg-rose-700 border border-rose-600"
                                 title={isSaida ? 'Estornar saída para carregamento (devolve caixas ao estoque)' : 'Estornar entrada de estoque'}
                               >
-                                {reversingId === m.id ? 'Estornando...' : isSaida ? 'Estornar Saída' : 'Estornar'}
+                                {reversingId === m.id ? 'Estornando...' : 'Estornar'}
                               </button>
                             ) : (
                               <span className="text-xs text-slate-500 font-mono">—</span>
