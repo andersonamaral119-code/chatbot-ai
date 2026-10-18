@@ -21,6 +21,7 @@ export interface StockMovement {
   productCode?: string;
   productName: string;
   type: 'entrada' | 'saida';
+  kind?: 'entrada' | 'saida_carregamento' | 'estorno';
   quantity: number;
   pallets?: number;
   loose?: number;
@@ -34,5 +35,6 @@ export interface StockMovement {
   reversed_at?: string;
   reversed_by?: string;
   reversal_reason?: string;
+  reversal_of?: string;
   reversal_entry_id?: string;
 }

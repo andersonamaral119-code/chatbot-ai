@@ -97,6 +97,8 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [activeTab, setActiveTab] = useState<'consulta' | 'historico'>('consulta');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [reversalTarget, setReversalTarget] = useState<StockMovement | null>(null);
+  const [reversalReasonInput, setReversalReasonInput] = useState('');
 
   useEffect(() => {
     // Carregar e persistir sessão ativa do Supabase
@@ -166,11 +168,12 @@ export default function App() {
             productCode: p?.code || 'N/A',
             productName: p?.name || 'Produto',
             type: isSaida ? 'saida' : 'entrada',
+            kind: e.kind,
             quantity: total,
             pallets: calculatedPallets,
             loose: calculatedLoose,
             date: new Date(e.created_at).toLocaleString('pt-BR'),
-            reason: e.notes || 'Entrada em estoque',
+            reason: e.reason || e.notes || (isSaida ? 'Saída de carregamento' : 'Entrada em estoque'),
             lot: e.lot || '-',
             notes: e.notes || '',
             created_by: e.created_by,
@@ -406,41 +409,44 @@ export default function App() {
 
   const [reversingId, setReversingId] = useState<string | null>(null);
 
-  const handleReverseEntry = async (entry: StockMovement) => {
+  const handleOpenReversalModal = (entry: StockMovement) => {
     if (entry.status === 'reversed' || reversingId === entry.id) return;
+    const isSaida = entry.type === 'saida' || entry.kind === 'saida_carregamento';
+    setReversalReasonInput(isSaida ? 'Estorno autorizado de saída de carregamento' : 'Estorno autorizado de entrada');
+    setReversalTarget(entry);
+  };
 
-    const reasonInput = window.prompt(
-      `Informe o motivo do estorno para a entrada de ${entry.quantity} cx (${entry.productCode || 'PP'} - Lote: ${entry.lot || 'S/L'}):`,
-      'Estorno de entrada de teste'
-    );
-    if (reasonInput === null) return;
+  const handleConfirmReversal = async () => {
+    if (!reversalTarget || reversingId === reversalTarget.id) return;
+    const trimmedReason = reversalReasonInput.trim();
+    if (trimmedReason.length < 3) {
+      setFeedback({ type: 'error', message: 'Informe um motivo com no mínimo 3 caracteres.' });
+      return;
+    }
 
-    const reason = reasonInput.trim() || 'Estorno manual de entrada';
-    const confirmed = window.confirm(
-      `Atenção: confirmar o estorno de ${entry.quantity} caixas (${entry.productName})?\n\nMotivo: ${reason}\n\nEssa ação atualizará o saldo e manterá o lançamento como estornado.`
-    );
-    if (!confirmed) return;
-
+    const entry = reversalTarget;
+    const isSaida = entry.type === 'saida' || entry.kind === 'saida_carregamento';
     setReversingId(entry.id);
 
     try {
       const { error } = await supabase.rpc('reverse_stock_entry', {
         _entry_id: entry.id,
-        _reason: reason,
+        _reason: trimmedReason,
       });
 
       if (error) {
-        setFeedback({ type: 'error', message: `Erro ao estornar entrada: ${error.message}` });
+        setFeedback({ type: 'error', message: `Erro ao estornar: ${error.message}` });
         return;
       }
 
       await fetchSupabaseProducts();
       setFeedback({
         type: 'success',
-        message: `Entrada do produto ${entry.productCode} estornada com sucesso. Saldo recalculado!`,
+        message: `${isSaida ? 'Saída de carregamento' : 'Entrada'} [${entry.productCode}] estornada. ${Math.abs(entry.quantity)} caixas devolvidas ao saldo!`,
       });
+      setReversalTarget(null);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err?.message || 'Falha ao estornar lançamento.' });
+      setFeedback({ type: 'error', message: err?.message || 'Falha ao processar estorno autorizado.' });
     } finally {
       setReversingId(null);
     }
@@ -649,12 +655,16 @@ export default function App() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={() => handleReverseEntry(m)}
+                                onClick={() => handleOpenReversalModal(m)}
                                 disabled={reversingId === m.id}
-                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md bg-rose-800 hover:bg-rose-700 text-white border border-rose-600 transition-colors shadow-sm disabled:opacity-50"
-                                title="Estornar esta entrada de estoque"
+                                className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md text-white transition-colors shadow-sm disabled:opacity-50 ${
+                                  m.type === 'saida'
+                                    ? 'bg-amber-700 hover:bg-amber-600 border border-amber-500'
+                                    : 'bg-rose-800 hover:bg-rose-700 border border-rose-600'
+                                }`}
+                                title={m.type === 'saida' ? 'Estorno autorizado de saída (devolve ao saldo)' : 'Estornar entrada de estoque'}
                               >
-                                {reversingId === m.id ? 'Estornando...' : 'Estornar'}
+                                {reversingId === m.id ? 'Estornando...' : m.type === 'saida' ? 'Estornar Saída' : 'Estornar'}
                               </button>
                             )}
                           </td>
@@ -686,6 +696,68 @@ export default function App() {
           onClose={() => setIsMovementModalOpen(false)}
           onSaveMovement={handleSaveMovement}
         />
+      )}
+
+      {reversalTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-slate-100 space-y-4">
+            <div className="border-b border-slate-800 pb-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${reversalTarget.type === 'saida' ? 'bg-amber-400' : 'bg-rose-400'}`} />
+                  {reversalTarget.type === 'saida' ? 'Estorno Autorizado de Saída' : 'Estorno de Entrada de Estoque'}
+                </h3>
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                  ID: {reversalTarget.id.slice(0, 8)}...
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                O lançamento original será preservado como estornado e uma correção será registrada devolvendo as caixas ao saldo.
+              </p>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+              <div className="flex justify-between"><span className="text-slate-400">Produto:</span><span className="font-semibold text-white">{reversalTarget.productCode} — {reversalTarget.productName}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Tipo Original:</span><span className={`font-semibold ${reversalTarget.type === 'saida' ? 'text-amber-300' : 'text-emerald-300'}`}>{reversalTarget.type === 'saida' ? 'Saída de Carregamento' : 'Entrada em Estoque'}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Quantidade Movimentada:</span><span className="font-bold text-white">{Math.abs(reversalTarget.quantity)} caixas ({reversalTarget.pallets ?? 0} plt + {reversalTarget.loose ?? 0} av)</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Data do Lançamento:</span><span className="text-slate-300 font-mono">{reversalTarget.date}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Responsável / Criador:</span><span className="text-slate-300 font-mono">{reversalTarget.created_by ? `${reversalTarget.created_by.slice(0, 8)}...` : (user?.email || 'Autenticado')}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Efeito no Saldo:</span><span className="font-semibold text-emerald-400">{reversalTarget.type === 'saida' ? `+${Math.abs(reversalTarget.quantity)} cx (devolução ao estoque)` : `-${Math.abs(reversalTarget.quantity)} cx (anulação de entrada)`}</span></div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-300 font-medium mb-1">
+                Motivo / Justificativa do Estorno Autorizado *
+              </label>
+              <textarea
+                rows={3}
+                value={reversalReasonInput}
+                onChange={e => setReversalReasonInput(e.target.value)}
+                placeholder="Ex: Carregamento cancelado pela expedição, pedido não faturado..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setReversalTarget(null)}
+                disabled={Boolean(reversingId)}
+                className="px-3 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReversal}
+                disabled={Boolean(reversingId) || reversalReasonInput.trim().length < 3}
+                className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-500 text-white transition-colors disabled:opacity-50 shadow-md"
+              >
+                {reversingId ? 'Processando estorno...' : 'Confirmar Estorno Autorizado'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {!authLoading && !user && <AuthModal isOpen={true} />}
