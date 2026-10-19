@@ -29,8 +29,13 @@ export const UserManagement: React.FC = () => {
     const { error } = await supabase.from('authorized_emails').upsert({ email: normalized, display_name: displayName.trim(), role });
     if (error) setMessage('Falha ao autorizar e-mail: ' + error.message);
     else {
-      setMessage('E-mail autorizado. Envie o link da MARISOFT; a pessoa deve criar a conta usando este mesmo e-mail.');
+      const { error: existingUserError } = await supabase.from('user_profiles')
+        .update({ display_name: displayName.trim(), role, access_status: 'active' })
+        .eq('email', normalized);
+      if (existingUserError) setMessage('E-mail pré-autorizado, mas não foi possível atualizar uma conta existente: ' + existingUserError.message);
+      else setMessage('E-mail autorizado. Envie o link da MARISOFT; a pessoa deve criar a conta usando este mesmo e-mail.');
       setEmail(''); setDisplayName(''); setRole('operator');
+      await load();
     }
     setSaving(false);
   };
