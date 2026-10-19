@@ -49,8 +49,9 @@ create trigger marisoft_guard_last_admin before update or delete on public.user_
 
 create or replace function public.marisoft_handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare invitation public.authorized_emails%rowtype;
-declare admin_exists boolean;
+declare
+  invitation public.authorized_emails%rowtype;
+  admin_exists boolean;
 begin
   select * into invitation from public.authorized_emails where lower(email)=lower(new.email) limit 1;
   select exists(select 1 from public.user_profiles where role='admin' and access_status='active') into admin_exists;
