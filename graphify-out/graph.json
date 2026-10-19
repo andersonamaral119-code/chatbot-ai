@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-19T23:21:35.612692+00:00",
+  "generated_at": "2026-10-19T23:21:58.984854+00:00",
   "files": [
     {
       "path": "index.html",
@@ -35,7 +35,7 @@
     },
     {
       "path": "src/components/UserManagement.tsx",
-      "bytes": 6057
+      "bytes": 6432
     },
     {
       "path": "src/components/ProductModal.tsx",
