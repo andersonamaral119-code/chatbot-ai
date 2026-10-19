@@ -7,6 +7,7 @@ import { ProductModal } from './components/ProductModal';
 import { StockMovementModal } from './components/StockMovementModal';
 import { AiAssistant } from './components/AiAssistant';
 import { AuthModal } from '@/components/AuthModal';
+import { UserManagement } from '@/components/UserManagement';
 import { supabase } from '@/integrations/supabase/client';
 
 const REQUIRED_CATALOG = [
@@ -103,7 +104,21 @@ export default function App() {
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
-  const [activeTab, setActiveTab] = useState<'consulta' | 'historico'>('consulta');
+  const [activeTab, setActiveTab] = useState<'consulta' | 'historico' | 'usuarios'>('consulta');
+  const [userProfile, setUserProfile] = useState<{ role: string; access_status: string } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) { setUserProfile(null); setProfileLoading(false); return; }
+    setProfileLoading(true);
+    supabase.from('user_profiles').select('role,access_status').eq('id', user.id).maybeSingle().then(({ data, error }) => {
+      if (cancelled) return;
+      setUserProfile(error ? null : data);
+      setProfileLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [user]);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [reversalTarget, setReversalTarget] = useState<StockMovement | null>(null);
   const [reversalReasonInput, setReversalReasonInput] = useState('');
@@ -549,6 +564,8 @@ export default function App() {
 
         <AiAssistant products={products} />
 
+        {user && userProfile?.access_status === 'active' && userProfile.role === 'admin' && <div className="mb-2"><button onClick={() => setActiveTab('usuarios')} className={`px-4 py-2 text-sm font-semibold rounded-lg border ${activeTab === 'usuarios' ? 'bg-violet-600 text-white border-violet-500' : 'bg-slate-900 text-violet-300 border-violet-900 hover:bg-slate-800'}`}>Gerenciar Usuários</button></div>}
+
         <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
           <button
             onClick={() => setActiveTab('consulta')}
@@ -576,7 +593,9 @@ export default function App() {
         </div>
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          {activeTab === 'consulta' ? (
+          {activeTab === 'usuarios' ? (
+            userProfile?.role === 'admin' && userProfile.access_status === 'active' ? <UserManagement /> : <p className="p-4 text-rose-300">Acesso administrativo não autorizado.</p>
+          ) : activeTab === 'consulta' ? (
             <>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex flex-wrap items-center gap-2 flex-1">
@@ -784,6 +803,8 @@ export default function App() {
         </div>
       )}
 
+      {!authLoading && user && (profileLoading || !userProfile) && <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950 p-6 text-center text-slate-200"><div><p className="text-lg font-semibold">Verificando autorização da MARISOFT...</p><p className="mt-2 text-sm text-slate-400">Se esta tela não sair, a configuração de acesso ainda precisa ser aplicada no banco.</p></div></div>}
+      {!authLoading && user && userProfile && userProfile.access_status !== 'active' && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-6"><div className="max-w-md rounded-2xl border border-amber-800 bg-slate-900 p-6 text-center"><h2 className="text-xl font-bold text-white">Acesso ainda não liberado</h2><p className="mt-2 text-sm text-slate-300">Sua conta está pendente ou bloqueada. Peça ao administrador da MARISOFT para autorizar seu e-mail.</p><button onClick={() => supabase.auth.signOut()} className="mt-4 rounded-lg bg-slate-700 px-4 py-2 text-sm text-white">Sair</button></div></div>}
       {!authLoading && !user && <AuthModal isOpen={true} />}
     </main>
   );
