@@ -1,6 +1,6 @@
 # Design system
 
-Generated: 2026-10-18T22:10:11.253293+00:00
+Generated: 2026-10-19T23:21:28.715875+00:00
 
 ## Tokens
 - No CSS custom properties found.
@@ -15,3 +15,4 @@ Generated: 2026-10-18T22:10:11.253293+00:00
 - src/components/MetricsCards.tsx
 - src/components/ProductModal.tsx
 - src/components/StockMovementModal.tsx
+- src/components/UserManagement.tsx

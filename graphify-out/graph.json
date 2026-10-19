@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T22:10:11.253293+00:00",
+  "generated_at": "2026-10-19T23:21:28.715875+00:00",
   "files": [
     {
       "path": "index.html",
@@ -19,15 +19,23 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 35751
+      "bytes": 38117
     },
     {
       "path": "src/main.tsx",
       "bytes": 298
     },
     {
+      "path": "supabase/migrations/20261019000100_marisoft_user_management.sql",
+      "bytes": 5089
+    },
+    {
       "path": "src/components/AiAssistant.tsx",
       "bytes": 3156
+    },
+    {
+      "path": "src/components/UserManagement.tsx",
+      "bytes": 6057
     },
     {
       "path": "src/components/ProductModal.tsx",
@@ -109,6 +117,10 @@
     },
     {
       "source": "src/App.tsx",
+      "target": "@/components/UserManagement"
+    },
+    {
+      "source": "src/App.tsx",
       "target": "@/integrations/supabase/client"
     },
     {
@@ -130,6 +142,14 @@
     {
       "source": "src/components/AiAssistant.tsx",
       "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/UserManagement.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/UserManagement.tsx",
+      "target": "@/integrations/supabase/client"
     },
     {
       "source": "src/components/ProductModal.tsx",
