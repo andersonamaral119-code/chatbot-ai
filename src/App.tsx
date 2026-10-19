@@ -107,18 +107,40 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'consulta' | 'historico' | 'usuarios'>('consulta');
   const [userProfile, setUserProfile] = useState<{ role: string; access_status: string } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileRetry, setProfileRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    if (!user) { setUserProfile(null); setProfileLoading(false); return; }
+    if (!user) {
+      setUserProfile(null);
+      setProfileError(null);
+      setProfileLoading(false);
+      return;
+    }
     setProfileLoading(true);
+    setProfileError(null);
     supabase.from('user_profiles').select('role,access_status').eq('id', user.id).maybeSingle().then(({ data, error }) => {
       if (cancelled) return;
-      setUserProfile(error ? null : data);
+      if (error) {
+        setUserProfile(null);
+        setProfileError(error.message || 'Não foi possível consultar seu perfil de acesso.');
+      } else if (!data) {
+        setUserProfile(null);
+        setProfileError('Seu perfil ainda não foi criado no banco de dados.');
+      } else {
+        setUserProfile(data);
+        setProfileError(null);
+      }
+      setProfileLoading(false);
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      setUserProfile(null);
+      setProfileError(error instanceof Error ? error.message : 'Falha ao consultar o perfil de acesso.');
       setProfileLoading(false);
     });
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, profileRetry]);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [reversalTarget, setReversalTarget] = useState<StockMovement | null>(null);
   const [reversalReasonInput, setReversalReasonInput] = useState('');
@@ -803,7 +825,7 @@ export default function App() {
         </div>
       )}
 
-      {!authLoading && user && (profileLoading || !userProfile) && <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950 p-6 text-center text-slate-200"><div><p className="text-lg font-semibold">Verificando autorização da MARISOFT...</p><p className="mt-2 text-sm text-slate-400">Se esta tela não sair, a configuração de acesso ainda precisa ser aplicada no banco.</p></div></div>}
+      {!authLoading && user && (profileLoading || !userProfile) && <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950 p-6 text-center text-slate-200"><div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6"><p className="text-lg font-semibold">{profileLoading ? 'Verificando autorização da MARISOFT...' : 'Não foi possível confirmar seu acesso'}</p><p className="mt-2 text-sm text-slate-400">{profileLoading ? 'Aguarde enquanto consultamos seu perfil.' : 'Isso pode acontecer se a configuração de usuários ainda não foi aplicada ao banco. Nenhum acesso será liberado sem confirmação.'}</p>{!profileLoading && profileError && <p className="mt-3 break-words rounded-lg bg-slate-950 p-3 text-left text-xs text-amber-300">Detalhe: {profileError}</p>}{!profileLoading && <div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setProfileRetry(n => n + 1)} className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white">Tentar novamente</button><button type="button" onClick={() => void supabase.auth.signOut()} className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200">Sair</button></div>}</div></div>}
       {!authLoading && user && userProfile && userProfile.access_status !== 'active' && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-6"><div className="max-w-md rounded-2xl border border-amber-800 bg-slate-900 p-6 text-center"><h2 className="text-xl font-bold text-white">Acesso ainda não liberado</h2><p className="mt-2 text-sm text-slate-300">Sua conta está pendente ou bloqueada. Peça ao administrador da MARISOFT para autorizar seu e-mail.</p><button onClick={() => supabase.auth.signOut()} className="mt-4 rounded-lg bg-slate-700 px-4 py-2 text-sm text-white">Sair</button></div></div>}
       {!authLoading && !user && <AuthModal isOpen={true} />}
     </main>
