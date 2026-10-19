@@ -545,8 +545,17 @@ export default function App() {
                 </button>
               </div>
             )}
+            {user && userProfile?.access_status === 'active' && userProfile.role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('usuarios')}
+                className="px-4 py-2 text-sm font-semibold rounded-lg border border-violet-700 bg-violet-950 text-violet-200 hover:bg-violet-800 transition-colors"
+              >
+                Gerenciar Usuários
+              </button>
+            )}
             <button
-              onClick={() => setIsMovementModalOpen(true)}
+              onClick={() => setIsMovementModalOpen(true)
               disabled={products.length === 0}
               className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition-colors shadow-lg shadow-emerald-950/40 font-semibold"
             >
@@ -585,8 +594,6 @@ export default function App() {
         <MetricsCards products={products} entriesCount={movements.filter(m => m.type === 'entrada').length} />
 
         <AiAssistant products={products} />
-
-        {user && userProfile?.access_status === 'active' && userProfile.role === 'admin' && <div className="mb-2"><button onClick={() => setActiveTab('usuarios')} className={`px-4 py-2 text-sm font-semibold rounded-lg border ${activeTab === 'usuarios' ? 'bg-violet-600 text-white border-violet-500' : 'bg-slate-900 text-violet-300 border-violet-900 hover:bg-slate-800'}`}>Gerenciar Usuários</button></div>}
 
         <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
           <button
