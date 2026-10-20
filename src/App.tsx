@@ -8,6 +8,7 @@ import { StockMovementModal } from './components/StockMovementModal';
 import { AiAssistant } from './components/AiAssistant';
 import { AuthModal } from '@/components/AuthModal';
 import { UserManagement } from '@/components/UserManagement';
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 import { supabase } from '@/integrations/supabase/client';
 
 const REQUIRED_CATALOG = [
@@ -99,6 +100,7 @@ export default function App() {
 
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
@@ -537,6 +539,14 @@ export default function App() {
                   {user.email}
                 </span>
                 <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className="ml-2 text-cyan-400 hover:text-cyan-300 transition-colors"
+                  title="Alterar minha senha"
+                >
+                  Alterar senha
+                </button>
+                <button
                   onClick={() => supabase.auth.signOut()}
                   className="ml-2 text-slate-400 hover:text-rose-400 transition-colors"
                   title="Encerrar sessão"
@@ -759,6 +769,8 @@ export default function App() {
           )}
         </section>
       </div>
+
+      {user && <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} email={user.email || ''} />}
 
       {isProductModalOpen && (
         <ProductModal
