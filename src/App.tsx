@@ -618,6 +618,21 @@ export default function App() {
           >
             Histórico de Movimentações ({movements.length})
           </button>
+          {user && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('usuarios')}
+              disabled={!(userProfile?.access_status === 'active' && userProfile.role === 'admin')}
+              title={userProfile?.role === 'admin' && userProfile.access_status === 'active' ? 'Abrir gerenciamento de usuários' : 'Disponível somente para administrador ativo'}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                activeTab === 'usuarios'
+                  ? 'bg-violet-600 text-white border-violet-500'
+                  : 'bg-violet-950/50 text-violet-200 border-violet-800 hover:bg-violet-900/60'
+              }`}
+            >
+              Gerenciar Usuários
+            </button>
+          )}
           <span className="ml-auto text-xs text-slate-400 hidden sm:inline">
             Estorno disponível para Entradas e Saídas
           </span>
