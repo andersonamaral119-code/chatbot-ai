@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20T01:43:55.856687+00:00",
+  "generated_at": "2026-10-20T01:44:25.206818+00:00",
   "files": [
     {
       "path": "index.html",
@@ -19,7 +19,7 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 40223
+      "bytes": 40837
     },
     {
       "path": "src/main.tsx",
@@ -122,6 +122,10 @@
     {
       "source": "src/App.tsx",
       "target": "@/components/UserManagement"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "@/components/ChangePasswordModal"
     },
     {
       "source": "src/App.tsx",
