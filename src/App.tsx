@@ -545,17 +545,6 @@ export default function App() {
                 </button>
               </div>
             )}
-            {user && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('usuarios')}
-                disabled={!(userProfile?.access_status === 'active' && userProfile.role === 'admin')}
-                title={userProfile?.role === 'admin' && userProfile.access_status === 'active' ? 'Gerenciar acessos à MARISOFT' : 'Disponível somente para administrador ativo'}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Gerenciar Usuários
-              </button>
-            )}
             <button
               onClick={() => setIsMovementModalOpen(true)}
               disabled={products.length === 0}
