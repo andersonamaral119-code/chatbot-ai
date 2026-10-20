@@ -545,15 +545,6 @@ export default function App() {
                 </button>
               </div>
             )}
-            {user && userProfile?.access_status === 'active' && userProfile.role === 'admin' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('usuarios')}
-                className="px-4 py-2 text-sm font-semibold rounded-lg border border-violet-700 bg-violet-950 text-violet-200 hover:bg-violet-800 transition-colors"
-              >
-                Gerenciar Usuários
-              </button>
-            )}
             <button
               onClick={() => setIsMovementModalOpen(true)
               disabled={products.length === 0}
@@ -592,6 +583,22 @@ export default function App() {
         )}
 
         <MetricsCards products={products} entriesCount={movements.filter(m => m.type === 'entrada').length} />
+
+        {user && userProfile?.access_status === 'active' && userProfile.role === 'admin' && (
+          <section className="rounded-xl border border-violet-800 bg-violet-950/40 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-white">Gerenciamento de Usuários</h2>
+              <p className="mt-1 text-sm text-slate-300">Libere acessos à MARISOFT, escolha a função de cada pessoa e bloqueie ou desbloqueie contas.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('usuarios')}
+              className="shrink-0 rounded-lg bg-violet-600 px-5 py-3 text-sm font-bold text-white hover:bg-violet-500 transition-colors"
+            >
+              Gerenciar Usuários
+            </button>
+          </section>
+        )}
 
         <AiAssistant products={products} />
 
