@@ -618,7 +618,13 @@ export default function App() {
           >
             Histórico de Movimentações ({movements.length})
           </button>
-          {user && (
+          <span className="ml-auto text-xs text-slate-400 hidden sm:inline">
+            Estorno disponível para Entradas e Saídas
+          </span>
+        </div>
+
+        {user && (
+          <div className="flex justify-start">
             <button
               type="button"
               onClick={() => setActiveTab('usuarios')}
@@ -632,11 +638,8 @@ export default function App() {
             >
               Gerenciar Usuários
             </button>
-          )}
-          <span className="ml-auto text-xs text-slate-400 hidden sm:inline">
-            Estorno disponível para Entradas e Saídas
-          </span>
-        </div>
+          </div>
+        )}
 
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-4">
           {activeTab === 'usuarios' ? (
