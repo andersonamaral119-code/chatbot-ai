@@ -1,6 +1,6 @@
 # Design system
 
-Generated: 2026-10-20T01:09:52.280863+00:00
+Generated: 2026-10-20T01:43:55.856687+00:00
 
 ## Tokens
 - No CSS custom properties found.
@@ -11,6 +11,7 @@ Generated: 2026-10-20T01:09:52.280863+00:00
 ## Project components
 - src/components/AiAssistant.tsx
 - src/components/AuthModal.tsx
+- src/components/ChangePasswordModal.tsx
 - src/components/InventoryTable.tsx
 - src/components/MetricsCards.tsx
 - src/components/ProductModal.tsx

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20T01:09:52.280863+00:00",
+  "generated_at": "2026-10-20T01:43:55.856687+00:00",
   "files": [
     {
       "path": "index.html",
@@ -30,28 +30,32 @@
       "bytes": 5085
     },
     {
-      "path": "src/components/InventoryTable.tsx",
-      "bytes": 4378
-    },
-    {
       "path": "src/components/AiAssistant.tsx",
       "bytes": 3156
-    },
-    {
-      "path": "src/components/MetricsCards.tsx",
-      "bytes": 2472
-    },
-    {
-      "path": "src/components/ProductModal.tsx",
-      "bytes": 6917
     },
     {
       "path": "src/components/UserManagement.tsx",
       "bytes": 6432
     },
     {
+      "path": "src/components/ProductModal.tsx",
+      "bytes": 6917
+    },
+    {
       "path": "src/components/StockMovementModal.tsx",
       "bytes": 9133
+    },
+    {
+      "path": "src/components/MetricsCards.tsx",
+      "bytes": 2472
+    },
+    {
+      "path": "src/components/InventoryTable.tsx",
+      "bytes": 4378
+    },
+    {
+      "path": "src/components/ChangePasswordModal.tsx",
+      "bytes": 4849
     },
     {
       "path": "src/components/AuthModal.tsx",
@@ -136,35 +140,11 @@
       "target": "@/App"
     },
     {
-      "source": "src/components/InventoryTable.tsx",
-      "target": "react"
-    },
-    {
-      "source": "src/components/InventoryTable.tsx",
-      "target": "../types/inventory"
-    },
-    {
       "source": "src/components/AiAssistant.tsx",
       "target": "react"
     },
     {
       "source": "src/components/AiAssistant.tsx",
-      "target": "../types/inventory"
-    },
-    {
-      "source": "src/components/MetricsCards.tsx",
-      "target": "react"
-    },
-    {
-      "source": "src/components/MetricsCards.tsx",
-      "target": "../types/inventory"
-    },
-    {
-      "source": "src/components/ProductModal.tsx",
-      "target": "react"
-    },
-    {
-      "source": "src/components/ProductModal.tsx",
       "target": "../types/inventory"
     },
     {
@@ -176,12 +156,44 @@
       "target": "@/integrations/supabase/client"
     },
     {
+      "source": "src/components/ProductModal.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/ProductModal.tsx",
+      "target": "../types/inventory"
+    },
+    {
       "source": "src/components/StockMovementModal.tsx",
       "target": "react"
     },
     {
       "source": "src/components/StockMovementModal.tsx",
       "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/MetricsCards.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/MetricsCards.tsx",
+      "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/InventoryTable.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/InventoryTable.tsx",
+      "target": "../types/inventory"
+    },
+    {
+      "source": "src/components/ChangePasswordModal.tsx",
+      "target": "react"
+    },
+    {
+      "source": "src/components/ChangePasswordModal.tsx",
+      "target": "@/integrations/supabase/client"
     },
     {
       "source": "src/components/AuthModal.tsx",
