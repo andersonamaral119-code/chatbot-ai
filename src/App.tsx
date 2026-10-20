@@ -545,6 +545,17 @@ export default function App() {
                 </button>
               </div>
             )}
+            {user && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('usuarios')}
+                disabled={!(userProfile?.access_status === 'active' && userProfile.role === 'admin')}
+                title={userProfile?.role === 'admin' && userProfile.access_status === 'active' ? 'Gerenciar acessos à MARISOFT' : 'Disponível somente para administrador ativo'}
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Gerenciar Usuários
+              </button>
+            )}
             <button
               onClick={() => setIsMovementModalOpen(true)}
               disabled={products.length === 0}
@@ -583,22 +594,6 @@ export default function App() {
         )}
 
         <MetricsCards products={products} entriesCount={movements.filter(m => m.type === 'entrada').length} />
-
-        {user && userProfile?.access_status === 'active' && userProfile.role === 'admin' && (
-          <section className="rounded-xl border border-violet-800 bg-violet-950/40 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-white">Gerenciamento de Usuários</h2>
-              <p className="mt-1 text-sm text-slate-300">Libere acessos à MARISOFT, escolha a função de cada pessoa e bloqueie ou desbloqueie contas.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveTab('usuarios')}
-              className="shrink-0 rounded-lg bg-violet-600 px-5 py-3 text-sm font-bold text-white hover:bg-violet-500 transition-colors"
-            >
-              Gerenciar Usuários
-            </button>
-          </section>
-        )}
 
         <AiAssistant products={products} />
 
