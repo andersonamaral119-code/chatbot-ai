@@ -8,6 +8,8 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,6 +17,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const handleForgotPassword = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      if (!email.trim()) {
+        setErrorMessage('Informe seu e-mail para receber o link de recuperação.');
+        return;
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      setSuccessMessage('Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha. Confira também o spam.');
+    } catch (err: unknown) {
+      const errObj = err as { message?: string };
+      setErrorMessage(errObj?.message || 'Não foi possível solicitar a recuperação da senha.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,14 +48,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     try {
       if (isSignUp) {
-        // Cadastro comum: nunca envia 'role: admin' no frontend para proteger regras RLS
+        // Cadastro público: nunca permite escolher função ou nível de acesso no frontend.
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: { data: { display_name: displayName.trim() } },
         });
 
         if (error) throw error;
-        setSuccessMessage('Cadastro realizado com sucesso! Verifique seu e-mail para confirmação se necessário.');
+        setSuccessMessage('Cadastro enviado com sucesso! Se a confirmação por e-mail estiver ativada, confirme seu endereço antes de entrar.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -57,12 +82,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             M
           </div>
           <h2 className="text-xl font-bold text-white">
-            {isSignUp ? 'Criar Acesso — MARISOFT IA' : 'Acesso ao MARISOFT IA'}
+            {isForgotPassword ? 'Recuperar senha — MARISOFT IA' : isSignUp ? 'Criar conta — MARISOFT IA' : 'Acesso ao MARISOFT IA'}
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            {isSignUp
-              ? 'Solicite sua conta de operador do sistema de estoque.'
-              : 'Autentique-se com seu e-mail e senha cadastrados.'}
+            {isForgotPassword
+              ? 'Informe seu e-mail para receber um link de recuperação.'
+              : isSignUp
+                ? 'Cadastre seu nome, e-mail e senha para criar sua conta.'
+                : 'Entre com seu e-mail e senha cadastrados.'}
           </p>
         </div>
 
@@ -78,7 +105,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {!isForgotPassword && <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && <div>
+            <label className="block text-xs text-slate-400 mb-1 font-medium">Nome completo</label>
+            <input
+              type="text"
+              required
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              placeholder="Seu nome"
+              autoComplete="name"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+            />
+          </div>}
           <div>
             <label className="block text-xs text-slate-400 mb-1 font-medium">E-mail</label>
             <input
@@ -111,20 +150,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           >
             {loading ? 'Processando...' : isSignUp ? 'Cadastrar Usuário' : 'Entrar no Sistema'}
           </button>
-        </form>
+        </form>}
 
-        <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        {isForgotPassword && <div className="space-y-3">
+          <button type="button" onClick={() => void handleForgotPassword()} disabled={loading} className="w-full py-2.5 px-4 rounded-lg bg-cyan-600 hover:bg-cyan-500 font-medium text-white text-sm disabled:opacity-50">
+            {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+          </button>
+          <button type="button" onClick={() => { setIsForgotPassword(false); setErrorMessage(null); setSuccessMessage(null); }} className="w-full text-sm text-cyan-400 hover:text-cyan-300">Voltar para entrar</button>
+        </div>}
+
+        {!isForgotPassword && !isSignUp && <div className="mt-3 text-right">
+          <button type="button" onClick={() => { setIsForgotPassword(true); setErrorMessage(null); setSuccessMessage(null); }} className="text-xs text-cyan-400 hover:text-cyan-300">Esqueci minha senha</button>
+        </div>}
+
+        {!isForgotPassword && <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <span>{isSignUp ? 'Já possui login?' : 'Ainda não tem conta?'}</span>
           <button
             type="button"
             onClick={() => {
               setIsSignUp(!isSignUp);
+              setIsForgotPassword(false);
               setErrorMessage(null);
               setSuccessMessage(null);
             }}
             className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
           >
-            {isSignUp ? 'Ir para Login' : 'Criar Nova Conta'}
+            {isSignUp ? 'Ir para Login' : 'Criar uma conta'}
           </button>
         </div>
       </div>
