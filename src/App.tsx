@@ -546,7 +546,7 @@ export default function App() {
               </div>
             )}
             <button
-              onClick={() => setIsMovementModalOpen(true)
+              onClick={() => setIsMovementModalOpen(true)}
               disabled={products.length === 0}
               className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition-colors shadow-lg shadow-emerald-950/40 font-semibold"
             >
